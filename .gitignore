@@ -1,0 +1,14 @@
+# Archivos de R y RStudio
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# Salidas que se regeneran con los scripts
+datos/procesados/*
+!datos/procesados/.gitkeep
+figuras/*
+!figuras/.gitkeep
+
+# Datos que se descargan por código desde datos.gov.co
+datos/crudos/*.csv

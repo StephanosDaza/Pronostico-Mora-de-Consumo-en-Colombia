@@ -23,7 +23,7 @@ calcular_acf_pacf <- function(x, rezagos = 36) {
 }
 
 # gráfica de ACF y PACF
-grafico_acf_pacf <- function(d, nombre, diferencia = "ninguna", rezagos = 36) {
+grafico_acf_pacf <- function(d, diferencia = "ninguna", rezagos = 36) {
   d <- dplyr::arrange(d, fecha)
   x <- diferenciar(d$mora_pct, diferencia)
   datos <- calcular_acf_pacf(x, rezagos)
@@ -39,7 +39,7 @@ grafico_acf_pacf <- function(d, nombre, diferencia = "ninguna", rezagos = 36) {
     ggplot2::geom_segment(ggplot2::aes(xend = rezago, yend = 0), colour = "#2a78d6", linewidth = 0.7) +
     ggplot2::facet_wrap(~ funcion, ncol = 2) +
     ggplot2::scale_x_continuous(breaks = seq(0, rezagos, 6)) +
-    ggplot2::labs(title = paste0("ACF y PACF: ", nombre, " (", etiqueta, ")"),
+    ggplot2::labs(title = paste0("ACF y PACF ", etiqueta),
                   subtitle = paste0("Líneas punteadas: banda aproximada de significancia al 95 %. ",
                                     "Líneas verticales: rezagos 12, 24 y 36."),
                   x = "Rezago (meses)", y = NULL) +

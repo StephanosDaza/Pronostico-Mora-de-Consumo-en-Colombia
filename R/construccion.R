@@ -1,21 +1,13 @@
-# Índice de mora y tasa mensual
+# Índice de mora de consumo y tasa mensual
 
-# productos de consumo (columna UNICAP)
-PRODUCTOS_CONSUMO <- tibble::tribble(
-  ~unicap, ~serie,
-  1L,  "Crédito rotativo",
-  2L,  "Tarjetas de crédito",
-  3L,  "Libre inversión",
-  4L,  "Libranza",
-  5L,  "Vehículo",
-  6L,  "Otros portafolios",
-  29L, "Bajo monto",
-  30L, "Empleados"
-)
+# productos de consumo (UNICAP): crédito rotativo, tarjetas, libre inversión, libranza,
+# vehículo, otros portafolios, bajo monto y empleados
+UNICAP_CONSUMO <- c(1:6, 29, 30)
 
-# mora = (saldo - vigente) / saldo, por mes
-indice_mora <- function(cartera) {
+# mora = (saldo - vigente) / saldo, sumando productos y entidades por mes
+construir_serie_mora <- function(cartera) {
   cartera |>
+    dplyr::filter(unicap %in% UNICAP_CONSUMO) |>
     dplyr::group_by(fecha) |>
     dplyr::summarise(
       # antes de sumar el saldo
@@ -25,21 +17,8 @@ indice_mora <- function(cartera) {
       .groups = "drop"
     ) |>
     dplyr::mutate(vencida = saldo - vigente,
-                  mora_pct = 100 * vencida / saldo)
-}
-
-# serie total y una serie por producto
-construir_series_mora <- function(cartera) {
-  total <- indice_mora(cartera) |> dplyr::mutate(serie = "Consumo total")
-  por_producto <- cartera |>
-    dplyr::inner_join(PRODUCTOS_CONSUMO, by = "unicap") |>
-    dplyr::group_by(serie) |>
-    dplyr::group_modify(~ indice_mora(.x)) |>
-    dplyr::ungroup()
-  dplyr::bind_rows(total, por_producto) |>
-    dplyr::mutate(serie = factor(serie, levels = c("Consumo total", PRODUCTOS_CONSUMO$serie))) |>
-    dplyr::arrange(serie, fecha) |>
-    dplyr::select(fecha, serie, saldo, vigente, vencida, mora_pct, n_entidades)
+                  mora_pct = 100 * vencida / saldo) |>
+    dplyr::arrange(fecha)
 }
 
 # TIBC mensual (trimestral hasta ago-2017); si hay dos resoluciones en un mes queda la última

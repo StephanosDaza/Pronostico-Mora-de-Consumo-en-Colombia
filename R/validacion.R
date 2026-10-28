@@ -24,12 +24,11 @@ leer_icv_consumo <- function(ruta) {
     dplyr::filter(!is.na(valor))
 }
 
-# serie total construida frente al ICV
-validar_contra_icv <- function(series, ruta_icv, ruta_icv_castigos) {
+# serie construida frente al ICV
+validar_contra_icv <- function(serie, ruta_icv, ruta_icv_castigos) {
   icv  <- leer_icv_consumo(ruta_icv) |> dplyr::rename(icv_oficial = valor)
   icvc <- leer_icv_consumo(ruta_icv_castigos) |> dplyr::rename(icv_con_castigos = valor)
-  series |>
-    dplyr::filter(serie == "Consumo total") |>
+  serie |>
     dplyr::select(fecha, mora_construida = mora_pct) |>
     dplyr::inner_join(icv, by = "fecha") |>
     dplyr::inner_join(icvc, by = "fecha") |>

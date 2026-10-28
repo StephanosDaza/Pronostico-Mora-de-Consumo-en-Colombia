@@ -47,7 +47,7 @@ leer_cartera_csv <- function(ruta, fecha_corte) {
   names(crudo)[grepl("^\\(1\\)", names(crudo))] <- "_1_saldo_de_la_cartera_a"
   names(crudo)[grepl("^\\(2\\)", names(crudo))] <- "_2_vigente"
   estandarizar_cartera(crudo) |>
-    dplyr::filter(unicap %in% c(1:6, 29, 30), renglon == 5, fecha <= fecha_corte)
+    dplyr::filter(unicap %in% UNICAP_CONSUMO, renglon == 5, fecha <= fecha_corte)
 }
 
 # nombres y tipos de columnas

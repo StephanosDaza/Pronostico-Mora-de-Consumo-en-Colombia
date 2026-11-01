@@ -402,6 +402,34 @@ grafica_ajuste <- ggplot(datos_ajuste, aes(fecha)) + franja_intervencion() +
        x = NULL, y = "Índice de mora (%)", color = NULL) +
   theme_minimal(base_size = 12) + theme(legend.position = "top")
 ggsave("exploracion/comparacion_ajustes.png", grafica_ajuste, width = 11, height = 10, dpi = 150)
+# Ensayo histórico: entrenamiento hasta dic-2023, horizonte ene-dic 2024.
+fechas_pron <- seq(as.Date("2024-01-01"), by = "month", length.out = 12)
+tasa_pron <- tasa$tibc_consumo[match(indice_mes(fechas_pron) - 9, mes_tasa)]
+caida_pron <- pmin(pmax(indice_mes(fechas_pron) - (2020L * 12L + 2L), 0), 5)
+rebote_pron <- pmin(pmax(indice_mes(fechas_pron) - (2020L * 12L + 7L), 0), 6)
+regresores_pron <- list(cbind(tasa_9_meses = tasa_pron),
+  cbind(tasa_9_meses = tasa_pron, caida = caida_pron, rebote = rebote_pron),
+  cbind(tasa_9_meses = tasa_pron, caida = caida_pron, rebote = rebote_pron))
+pronosticos <- do.call(rbind, lapply(seq_along(modelos_ajuste), function(i) {
+  pred <- predict(modelos_ajuste[[i]], n.ahead = length(fechas_pron), newxreg = regresores_pron[[i]])
+  data.frame(fecha = fechas_pron, modelo = names(modelos_ajuste)[i],
+    pronostico = as.numeric(pred$pred), inferior = as.numeric(pred$pred - 1.96 * pred$se),
+    superior = as.numeric(pred$pred + 1.96 * pred$se), observado = serie$mora_pct[match(fechas_pron, serie$fecha)])
+}))
+pronosticos$modelo <- factor(pronosticos$modelo, levels = names(modelos_ajuste))
+grafica_pron <- ggplot(pronosticos, aes(fecha)) +
+  geom_ribbon(aes(ymin = inferior, ymax = superior), fill = "#f4bb7e", alpha = 0.35) +
+  geom_line(aes(y = observado, colour = "Mora observada"), linewidth = 0.85) +
+  geom_line(aes(y = pronostico, colour = "Pronóstico"), linewidth = 0.85, linetype = "dashed") +
+  facet_wrap(~ modelo, ncol = 1) + scale_color_manual(values = c("Mora observada" = "#1768ac", "Pronóstico" = "#d65f1a")) +
+  labs(title = "Pronósticos exploratorios para 2024", subtitle = "Origen: diciembre de 2023; intervalos aproximados del 95 %",
+       x = NULL, y = "Índice de mora (%)", colour = NULL) + theme_minimal(base_size = 12) + theme(legend.position = "top")
+ggsave("exploracion/pronosticos_exploratorios.png", grafica_pron, width = 11, height = 10, dpi = 150)
+resumen_pron <- do.call(rbind, lapply(split(pronosticos, pronosticos$modelo), function(p) data.frame(
+  modelo = as.character(p$modelo[1]), rmse = sqrt(mean((p$pronostico - p$observado)^2)),
+  cobertura = mean(p$observado >= p$inferior & p$observado <= p$superior), diciembre = tail(p$pronostico, 1))))
+filas_pron <- paste(sprintf("<tr><td>%s</td><td>%.3f</td><td>%d/12</td><td>%.2f %%</td></tr>", resumen_pron$modelo, resumen_pron$rmse, round(12 * resumen_pron$cobertura), resumen_pron$diciembre), collapse = "\n")
+print(resumen_pron)
 pagina_experimento <- c(
   '<hr style="border:0;border-top:3px solid #1768ac;margin:60px 0">',
   '<h1>Fase de experimentación</h1>',
@@ -453,7 +481,13 @@ pagina_experimento <- c(
   '<h2>Experimento 6: ajuste de los modelos</h2>',
   '<p>La línea azul es la mora observada y la línea naranja es el ajuste de un paso dentro de la muestra. Para cada mes el ajuste utiliza información previa y parámetros estimados con toda la muestra de entrenamiento. Se omite la primera observación por inicialización. Las fechas de intervención se sombrean en gris.</p>',
   '<img src="comparacion_ajustes.png" alt="Mora observada y ajuste de un paso de los tres modelos">',
-  '<p>La cercanía visual dentro de muestra no es una evaluación de pronósticos fuera de muestra.</p>'
+  '<p>La cercanía visual dentro de muestra no es una evaluación de pronósticos fuera de muestra.</p>',
+  '<hr style="border:0;border-top:2px solid #1768ac;margin:50px 0"><h2>Prueba informal: pronósticos de 2024</h2>',
+  '<p>Los tres modelos se estimaron hasta diciembre de 2023. Se pronostican 12 meses sin actualizar el modelo con la mora de 2024; la línea azul muestra lo que realmente ocurrió y la zona naranja es un intervalo aproximado al 95 %.</p>',
+  '<img src="pronosticos_exploratorios.png" alt="Pronósticos exploratorios de los tres modelos frente a la mora observada en 2024">',
+  '<table><tr><th>Modelo</th><th>RMSE, 12 meses (pp)</th><th>Cobertura observada</th><th>Pronóstico dic-2024</th></tr>', filas_pron, '</table>',
+  '<p>Para horizontes de 10 a 12 meses se usan tasas de enero a marzo de 2024, que no estaban disponibles al cierre de 2023: es una comparación retrospectiva condicionada a tasas observadas, no un pronóstico completamente en tiempo real. Los intervalos son condicionados a esas tasas y no incluyen su incertidumbre. Las rampas permanecen constantes según la hipótesis de intervención.</p>',
+  '<p>El rezago y las fechas de intervención se eligieron exploratoriamente y este es un único origen de pronóstico; el RMSE resume distintos horizontes y no es una evaluación definitiva.</p>'
 )
 pagina <- c(
   '<!doctype html><html lang="es"><head><meta charset="utf-8">',

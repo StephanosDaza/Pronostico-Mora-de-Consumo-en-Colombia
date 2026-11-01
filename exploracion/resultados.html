@@ -1,0 +1,251 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>Exploración de la mora</title>
+<style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;color:#203047} img{max-width:100%}table{border-collapse:collapse}td,th{padding:7px 25px 7px 0;text-align:left;border-bottom:1px solid #ddd}</style></head><body>
+<h1>Exploración de la mora</h1>
+<p>Serie mensual: 2015-01-01 a 2026-07-01 · 139 observaciones.</p>
+<p>En las gráficas temporales, la franja gris indica el período de intervención: marzo de 2020 a junio de 2021.</p>
+<h2>1. Serie original</h2><h3>Serie en el tiempo</h3><img src="serie.png" alt="Serie original">
+<h3>Cajas y bigotes por mes</h3><img src="cajas_por_mes.png" alt="Cajas por mes">
+<h3>ACF y PACF</h3><img src="correlaciones_original.png" alt="Correlaciones de la serie original">
+<h2>2. Primera diferencia regular</h2><p>y(t) - y(t-1)</p><h3>Serie en el tiempo</h3><img src="serie_primera_diferencia.png" alt="Primera diferencia">
+<h3>Cajas y bigotes por mes</h3><img src="cajas_primera_diferencia.png" alt="Cajas primera diferencia">
+<h3>ACF y PACF</h3><img src="correlaciones_primera.png" alt="Correlaciones de la primera diferencia">
+<h2>3. Diferencia estacional desde la serie original</h2><p>y(t) - y(t-12)</p><h3>Serie en el tiempo</h3><img src="serie_diferencia_estacional.png" alt="Diferencia estacional">
+<h3>Cajas y bigotes por mes</h3><img src="cajas_diferencia_estacional.png" alt="Cajas diferencia estacional">
+<h3>ACF y PACF</h3><img src="correlaciones_estacional.png" alt="Correlaciones de la diferencia estacional">
+<h2>4. Diferencias regular y estacional combinadas</h2><p>[y(t) - y(t-12)] - [y(t-1) - y(t-13)]</p>
+<h3>Serie en el tiempo</h3><img src="serie_combinada.png" alt="Diferencias combinadas">
+<h3>Cajas y bigotes por mes</h3><img src="cajas_combinada.png" alt="Cajas diferencias combinadas">
+<h3>ACF y PACF</h3><img src="correlaciones_combinada.png" alt="Correlaciones diferencias combinadas">
+<p>Bandas aproximadas al 95 %: ruido blanco y, en la ACF, Bartlett bajo un supuesto MA(k-1). Son referencias por rezago y dependen de sus supuestos.</p>
+<h2>5. Diagnóstico de sobrediferenciación</h2>
+<p>Siguiendo el informe de referencia: varianza con divisor n, autocorrelación r1 y predicción 2 × varianza previa × (1 - r1 previa). La identidad corresponde a una diferencia regular y supone estacionariedad de la serie previa; se muestra como referencia aproximada. Cada transformación usa todas sus observaciones disponibles.</p>
+<table><tr><th>Transformación</th><th>n</th><th>Varianza (n)</th><th>r1</th><th>Identidad</th><th>Media</th></tr>
+<tr><td>Original</td><td>139</td><td>1.2736</td><td>0.9724</td><td>—</td><td>5.6640</td></tr>
+<tr><td>Primera diferencia</td><td>138</td><td>0.0576</td><td>0.4892</td><td>0.0704</td><td>0.0024</td></tr>
+<tr><td>Diferencia estacional</td><td>127</td><td>1.9957</td><td>0.9717</td><td>—</td><td>0.0417</td></tr>
+<tr><td>Diferencias regular y estacional</td><td>126</td><td>0.1084</td><td>0.6567</td><td>0.1128</td><td>-0.0066</td></tr>
+</table>
+<p>En la fila combinada, la serie previa es la diferencia estacional. La cercanía entre identidad y varianza observada no demuestra estacionariedad: las diferencias de muestra y efectos de extremos también influyen.</p>
+<h3>Comparación adicional en período común</h3>
+<p>Varianza muestral en el mismo período: 2016-02-01 a 2026-07-01 (126 observaciones). Unidades: puntos porcentuales al cuadrado.</p>
+<table><tr><th>Serie</th><th>Varianza</th></tr>
+<tr><td>Original</td><td>1.3041</td></tr>
+<tr><td>Primera diferencia</td><td>0.0619</td></tr>
+<tr><td>Diferencia estacional</td><td>2.0276</td></tr>
+<tr><td>Diferencias regular y estacional</td><td>0.1093</td></tr>
+</table><p>La varianza por sí sola no demuestra sobrediferenciación; se interpreta junto con la ACF y el contexto de la serie.</p>
+<h2>6. Tasa de interés bancario corriente</h2>
+<p>Modalidad consumo y ordinario. La gráfica muestra el período de la mora: 2015-01-01 a 2026-07-01 (139 observaciones). La tasa era trimestral hasta agosto de 2017 y el proyecto la representa mes a mes según su vigencia.</p>
+<img src="tasa_interes.png" alt="Serie mensual de tasa de interés bancario corriente de consumo y ordinario">
+<h3>Frecuencia de las duraciones sin cambios</h3>
+<p>Esta tabla usa toda la tasa disponible desde 2007. Cada período reúne meses consecutivos con exactamente el mismo valor. Los períodos en los extremos pueden estar incompletos. Hasta agosto de 2017, la tasa tenía vigencia trimestral y se representó mensualmente.</p>
+<img src="frecuencia_duracion_tasa.png" alt="Frecuencia de duración de períodos con la tasa constante">
+<table><tr><th>Duración en meses</th><th>Número de períodos</th></tr>
+<tr><td>1</td><td>105</td></tr>
+<tr><td>2</td><td>4</td></tr>
+<tr><td>3</td><td>41</td></tr>
+</table>
+<h2>7. Mora y tasa de interés: correlaciones por rezago</h2>
+<p>Para cada rezago k se compara la mora del mes t con la tasa del mes t-k, usando las series en sus niveles originales. Rezago 0 compara el mismo mes. Todos los rezagos usan los mismos meses de mora que el análisis de diferencias; para ello se usan tasas anteriores a 2015 cuando son necesarias. La correlación resume todo el período, no es una correlación móvil.</p>
+<img src="correlacion_mora_tasa_rezagos.png" alt="Correlación de la mora con la tasa rezagada entre cero y 24 meses">
+<table><tr><th>Rezago (meses)</th><th>Correlación</th><th>Pares</th><th>Período de mora</th></tr>
+<tr><td>0</td><td>0.439</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>1</td><td>0.517</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>2</td><td>0.587</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>3</td><td>0.648</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>4</td><td>0.701</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>5</td><td>0.745</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>6</td><td>0.783</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>7</td><td>0.811</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>8</td><td>0.827</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>9</td><td>0.834</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>10</td><td>0.828</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>11</td><td>0.814</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>12</td><td>0.789</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>13</td><td>0.754</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>14</td><td>0.709</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>15</td><td>0.656</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>16</td><td>0.596</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>17</td><td>0.530</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>18</td><td>0.460</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>19</td><td>0.384</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>20</td><td>0.306</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>21</td><td>0.226</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>22</td><td>0.145</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>23</td><td>0.067</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+<tr><td>24</td><td>-0.010</td><td>138</td><td>2015-02-01 a 2026-07-01</td></tr>
+</table>
+<p>Las correlaciones de niveles pueden reflejar tendencias, persistencia y quiebres compartidos; no demuestran causalidad ni indican por sí solas que la tasa mejore el pronóstico.</p>
+<h2>8. Correlación entre primeras diferencias</h2>
+<p>Se compara el cambio mensual de la mora en t con el cambio mensual de la tasa en t-k. Para cada rezago se usan los mismos 138 meses de mora: 2015-02-01 a 2026-07-01. Se utilizan tasas anteriores a 2015 cuando el rezago lo requiere.</p>
+<img src="correlacion_cambios_rezagos.png" alt="Correlaciones entre cambios de mora y tasa rezagada">
+<table><tr><th>Rezago (meses)</th><th>Correlación</th><th>Pares</th></tr>
+<tr><td>0</td><td>0.173</td><td>138</td></tr>
+<tr><td>1</td><td>0.213</td><td>138</td></tr>
+<tr><td>2</td><td>0.279</td><td>138</td></tr>
+<tr><td>3</td><td>0.224</td><td>138</td></tr>
+<tr><td>4</td><td>0.235</td><td>138</td></tr>
+<tr><td>5</td><td>0.194</td><td>138</td></tr>
+<tr><td>6</td><td>0.333</td><td>138</td></tr>
+<tr><td>7</td><td>0.335</td><td>138</td></tr>
+<tr><td>8</td><td>0.271</td><td>138</td></tr>
+<tr><td>9</td><td>0.381</td><td>138</td></tr>
+<tr><td>10</td><td>0.218</td><td>138</td></tr>
+<tr><td>11</td><td>0.313</td><td>138</td></tr>
+<tr><td>12</td><td>0.303</td><td>138</td></tr>
+<tr><td>13</td><td>0.228</td><td>138</td></tr>
+<tr><td>14</td><td>0.254</td><td>138</td></tr>
+<tr><td>15</td><td>0.177</td><td>138</td></tr>
+<tr><td>16</td><td>0.134</td><td>138</td></tr>
+<tr><td>17</td><td>0.090</td><td>138</td></tr>
+<tr><td>18</td><td>0.134</td><td>138</td></tr>
+<tr><td>19</td><td>0.066</td><td>138</td></tr>
+<tr><td>20</td><td>0.046</td><td>138</td></tr>
+<tr><td>21</td><td>0.038</td><td>138</td></tr>
+<tr><td>22</td><td>-0.086</td><td>138</td></tr>
+<tr><td>23</td><td>-0.021</td><td>138</td></tr>
+<tr><td>24</td><td>-0.084</td><td>138</td></tr>
+</table>
+<p>Se incluyen los meses de pandemia. Estas correlaciones son exploratorias y no prueban causalidad.</p>
+<h2>9. Correlaciones sin período de intervención</h2>
+<p>El informe oficial marca marzo de 2020 a junio de 2021 como período de alivios. Se excluyen esos meses de mora y también julio de 2021, pues su primera diferencia usa junio. Quedan 121 meses de mora, iguales en ambas comparaciones y todos los rezagos.</p>
+<p>Se calculan primero las diferencias entre meses consecutivos de la serie original y luego se excluyen los meses indicados. Las tasas rezagadas se conservan aunque su fecha caiga en el período de intervención; los rezagos siguen el calendario real.</p>
+<img src="correlaciones_sin_intervencion.png" alt="Correlaciones entre mora y tasa sin meses de intervención">
+<table><tr><th>Rezago</th><th>Niveles</th><th>Primeras diferencias</th></tr>
+<tr><td>0</td><td>0.462</td><td>0.241</td></tr>
+<tr><td>1</td><td>0.550</td><td>0.295</td></tr>
+<tr><td>2</td><td>0.630</td><td>0.375</td></tr>
+<tr><td>3</td><td>0.699</td><td>0.368</td></tr>
+<tr><td>4</td><td>0.759</td><td>0.408</td></tr>
+<tr><td>5</td><td>0.808</td><td>0.342</td></tr>
+<tr><td>6</td><td>0.849</td><td>0.494</td></tr>
+<tr><td>7</td><td>0.878</td><td>0.490</td></tr>
+<tr><td>8</td><td>0.894</td><td>0.392</td></tr>
+<tr><td>9</td><td>0.901</td><td>0.588</td></tr>
+<tr><td>10</td><td>0.894</td><td>0.361</td></tr>
+<tr><td>11</td><td>0.877</td><td>0.476</td></tr>
+<tr><td>12</td><td>0.848</td><td>0.449</td></tr>
+<tr><td>13</td><td>0.808</td><td>0.350</td></tr>
+<tr><td>14</td><td>0.758</td><td>0.357</td></tr>
+<tr><td>15</td><td>0.698</td><td>0.263</td></tr>
+<tr><td>16</td><td>0.632</td><td>0.205</td></tr>
+<tr><td>17</td><td>0.559</td><td>0.147</td></tr>
+<tr><td>18</td><td>0.482</td><td>0.148</td></tr>
+<tr><td>19</td><td>0.401</td><td>0.089</td></tr>
+<tr><td>20</td><td>0.316</td><td>0.007</td></tr>
+<tr><td>21</td><td>0.232</td><td>0.058</td></tr>
+<tr><td>22</td><td>0.147</td><td>-0.095</td></tr>
+<tr><td>23</td><td>0.066</td><td>-0.038</td></tr>
+<tr><td>24</td><td>-0.014</td><td>-0.119</td></tr>
+</table>
+<p>Es una exploración con observaciones omitidas, no un modelo de intervención. No demuestra causalidad.</p>
+<h2>10. Antes y después de la intervención</h2>
+<p>Antes: febrero de 2015 a febrero de 2020 (61 meses de mora). Después: agosto de 2021 a julio de 2026 (60 meses). En cada período se usan los mismos meses de mora para todos los rezagos y ambas transformaciones. Julio de 2021 se excluye porque su primera diferencia depende de junio.</p>
+<p>Las tasas rezagadas se toman de sus fechas reales, que pueden estar fuera del período de mora, incluso durante la intervención. Las diferencias se calculan antes de segmentar. Las correlaciones resumen cada período completo; no son correlaciones móviles ni prueban causalidad.</p>
+<img src="correlaciones_antes_despues.png" alt="Correlaciones antes y después de la intervención, en niveles y primeras diferencias">
+<table><tr><th>Período de mora</th><th>Rezago</th><th>Pares</th><th>Niveles</th><th>Primeras diferencias</th></tr>
+<tr><td>Antes de la intervención</td><td>0</td><td>61</td><td>0.508</td><td>0.254</td></tr>
+<tr><td>Antes de la intervención</td><td>1</td><td>61</td><td>0.587</td><td>0.188</td></tr>
+<tr><td>Antes de la intervención</td><td>2</td><td>61</td><td>0.656</td><td>-0.004</td></tr>
+<tr><td>Antes de la intervención</td><td>3</td><td>61</td><td>0.725</td><td>0.234</td></tr>
+<tr><td>Antes de la intervención</td><td>4</td><td>61</td><td>0.780</td><td>0.107</td></tr>
+<tr><td>Antes de la intervención</td><td>5</td><td>61</td><td>0.827</td><td>-0.048</td></tr>
+<tr><td>Antes de la intervención</td><td>6</td><td>61</td><td>0.877</td><td>0.278</td></tr>
+<tr><td>Antes de la intervención</td><td>7</td><td>61</td><td>0.909</td><td>0.184</td></tr>
+<tr><td>Antes de la intervención</td><td>8</td><td>61</td><td>0.927</td><td>-0.028</td></tr>
+<tr><td>Antes de la intervención</td><td>9</td><td>61</td><td>0.947</td><td>0.446</td></tr>
+<tr><td>Antes de la intervención</td><td>10</td><td>61</td><td>0.939</td><td>0.061</td></tr>
+<tr><td>Antes de la intervención</td><td>11</td><td>61</td><td>0.927</td><td>0.124</td></tr>
+<tr><td>Antes de la intervención</td><td>12</td><td>61</td><td>0.907</td><td>0.390</td></tr>
+<tr><td>Antes de la intervención</td><td>13</td><td>61</td><td>0.863</td><td>0.211</td></tr>
+<tr><td>Antes de la intervención</td><td>14</td><td>61</td><td>0.802</td><td>0.097</td></tr>
+<tr><td>Antes de la intervención</td><td>15</td><td>61</td><td>0.735</td><td>0.246</td></tr>
+<tr><td>Antes de la intervención</td><td>16</td><td>61</td><td>0.653</td><td>-0.030</td></tr>
+<tr><td>Antes de la intervención</td><td>17</td><td>61</td><td>0.563</td><td>0.033</td></tr>
+<tr><td>Antes de la intervención</td><td>18</td><td>61</td><td>0.472</td><td>0.057</td></tr>
+<tr><td>Antes de la intervención</td><td>19</td><td>61</td><td>0.377</td><td>-0.057</td></tr>
+<tr><td>Antes de la intervención</td><td>20</td><td>61</td><td>0.276</td><td>-0.093</td></tr>
+<tr><td>Antes de la intervención</td><td>21</td><td>61</td><td>0.184</td><td>0.128</td></tr>
+<tr><td>Antes de la intervención</td><td>22</td><td>61</td><td>0.086</td><td>-0.045</td></tr>
+<tr><td>Antes de la intervención</td><td>23</td><td>61</td><td>-0.006</td><td>-0.018</td></tr>
+<tr><td>Antes de la intervención</td><td>24</td><td>61</td><td>-0.096</td><td>0.088</td></tr>
+<tr><td>Después de la intervención</td><td>0</td><td>60</td><td>0.456</td><td>0.254</td></tr>
+<tr><td>Después de la intervención</td><td>1</td><td>60</td><td>0.558</td><td>0.341</td></tr>
+<tr><td>Después de la intervención</td><td>2</td><td>60</td><td>0.651</td><td>0.489</td></tr>
+<tr><td>Después de la intervención</td><td>3</td><td>60</td><td>0.731</td><td>0.423</td></tr>
+<tr><td>Después de la intervención</td><td>4</td><td>60</td><td>0.798</td><td>0.505</td></tr>
+<tr><td>Después de la intervención</td><td>5</td><td>60</td><td>0.853</td><td>0.455</td></tr>
+<tr><td>Después de la intervención</td><td>6</td><td>60</td><td>0.898</td><td>0.576</td></tr>
+<tr><td>Después de la intervención</td><td>7</td><td>60</td><td>0.928</td><td>0.594</td></tr>
+<tr><td>Después de la intervención</td><td>8</td><td>60</td><td>0.946</td><td>0.517</td></tr>
+<tr><td>Después de la intervención</td><td>9</td><td>60</td><td>0.952</td><td>0.657</td></tr>
+<tr><td>Después de la intervención</td><td>10</td><td>60</td><td>0.942</td><td>0.454</td></tr>
+<tr><td>Después de la intervención</td><td>11</td><td>60</td><td>0.921</td><td>0.589</td></tr>
+<tr><td>Después de la intervención</td><td>12</td><td>60</td><td>0.887</td><td>0.491</td></tr>
+<tr><td>Después de la intervención</td><td>13</td><td>60</td><td>0.841</td><td>0.405</td></tr>
+<tr><td>Después de la intervención</td><td>14</td><td>60</td><td>0.785</td><td>0.440</td></tr>
+<tr><td>Después de la intervención</td><td>15</td><td>60</td><td>0.718</td><td>0.283</td></tr>
+<tr><td>Después de la intervención</td><td>16</td><td>60</td><td>0.644</td><td>0.273</td></tr>
+<tr><td>Después de la intervención</td><td>17</td><td>60</td><td>0.562</td><td>0.183</td></tr>
+<tr><td>Después de la intervención</td><td>18</td><td>60</td><td>0.475</td><td>0.177</td></tr>
+<tr><td>Después de la intervención</td><td>19</td><td>60</td><td>0.383</td><td>0.131</td></tr>
+<tr><td>Después de la intervención</td><td>20</td><td>60</td><td>0.288</td><td>0.033</td></tr>
+<tr><td>Después de la intervención</td><td>21</td><td>60</td><td>0.195</td><td>0.043</td></tr>
+<tr><td>Después de la intervención</td><td>22</td><td>60</td><td>0.101</td><td>-0.113</td></tr>
+<tr><td>Después de la intervención</td><td>23</td><td>60</td><td>0.010</td><td>-0.045</td></tr>
+<tr><td>Después de la intervención</td><td>24</td><td>60</td><td>-0.078</td><td>-0.177</td></tr>
+</table>
+<h2>11. Primer experimento: intervención y tasa</h2>
+<p>Ejemplo didáctico con datos de enero de 2015 a diciembre de 2023: cuatro modelos de regresión con errores ARIMA(1,1,0), ajustados por máxima verosimilitud. La intervención vale 1 entre marzo de 2020 y junio de 2021. La tasa se incorpora con rezago de nueve meses.</p>
+<table><tr><th>Modelo</th><th>AIC</th><th>Coeficientes</th></tr>
+<tr><td>Base</td><td>-9.89</td><td>ar1 = 0.4835</td></tr>
+<tr><td>Intervención</td><td>-9.41</td><td>ar1 = 0.4912; intervencion = -0.1772</td></tr>
+<tr><td>Tasa rezagada 9 meses</td><td>-15.33</td><td>ar1 = 0.4554; tasa_9_meses = 0.1871</td></tr>
+<tr><td>Intervención y tasa</td><td>-15.16</td><td>ar1 = 0.4642; intervencion = -0.1896; tasa_9_meses = 0.1902</td></tr>
+</table>
+<p>La diferencia se aplica al error de regresión: en niveles, mora = intervención + tasa rezagada + error ARIMA. En estos modelos no se han incluido términos estacionales ni se han diagnosticado los residuos; las cifras son exploratorias, no constituyen una selección. El rezago 9 se sugirió con la muestra completa: para evaluar pronósticos debe seleccionarse nuevamente sin usar datos futuros.</p>
+<hr style="border:0;border-top:3px solid #1768ac;margin:60px 0">
+<h1>Fase de experimentación</h1>
+<h2>Experimento 1: residuos de una regresión sin imponer ARIMA</h2>
+<p>Regresión por mínimos cuadrados de la mora en niveles frente a la tasa de nueve meses antes, con intercepto. Entrenamiento de enero de 2015 a diciembre de 2023, incluido el período sombreado; sin intervención explícita ni términos estacionales. No se impone una estructura AR a los residuos.</p>
+<p>Mora(t) = -0.6218 + 0.3018 × tasa(t-9) + e(t). Los coeficientes son descriptivos; la dependencia y la posible no estacionariedad limitan su inferencia.</p>
+<p>Luego calculamos &Delta;e(t) = e(t) - e(t-1), con los mismos coeficientes de la regresión original. Por álgebra, &Delta;e(t) = &Delta;mora(t) - &beta; × &Delta;tasa(t-9). No se vuelve a estimar la regresión sobre diferencias.</p>
+<p>ACF en el rezago 1: 0.913 para los residuos y 0.456 para sus primeras diferencias.</p>
+<img src="experimento_errores.png" alt="Evolución de errores e innovaciones">
+<h3>Residuos de la regresión original</h3><img src="residuos_ols_acf.png" alt="ACF y PACF de residuos en niveles">
+<h3>Primera diferencia de esos residuos</h3><img src="residuos_ols_diferencia_acf.png" alt="ACF y PACF de residuos diferenciados">
+<p>Las bandas son referencias aproximadas para series observadas; no constituyen pruebas exactas después de estimar la regresión. La intervención y las tendencias pueden afectar los correlogramas.</p>
+<h2>Experimento 2: AR(1) para el error diferenciado</h2>
+<p>Se ajustan conjuntamente la regresión y el AR(1): mora(t) = &beta; tasa(t-9) + &eta;(t), u(t) = &Delta;&eta;(t), u(t) = &phi; u(t-1) + &epsilon;(t). Los coeficientes pueden cambiar respecto a la regresión inicial. No se incluyen intervención ni términos estacionales.</p>
+<p>Estimaciones: &beta; = 0.1871; &phi; = 0.4554. Las innovaciones se obtienen del ajuste de R; se omite la primera por la inicialización.</p>
+<img src="innovaciones_ar1_tiempo.png" alt="Innovaciones del modelo en el tiempo">
+<img src="innovaciones_ar1_experimento.png" alt="ACF y PACF de las innovaciones del modelo">
+<p>ACF rezago 1 = -0.010; rezago 12 = 0.223. Ljung-Box hasta rezago 24: Q = 33.483, 23 grados de libertad aproximados (descontado un parámetro AR), valor p = 0.0730. Bandas y prueba son aproximadas y se interpretan con cautela por el regresor estimado, selección del rezago y período de intervención.</p>
+<h2>Experimento 3: intervención gradual con caída y rebote</h2>
+<p>Regresión en niveles: mora(t) = beta × tasa(t-9) + b1 × caída(t) + b2 × rebote(t) + error(t), con primera diferencia del error modelada como AR(1). La rampa de caída crece de marzo a julio de 2020 y permanece en 5; la del rebote crece de agosto de 2020 a enero de 2021 y permanece en 6. Así el efecto total posterior queda constante, no se fuerza a cero. Fechas elegidas exploratoriamente.</p>
+<p>Coeficientes: tasa 0.1879; caída -0.4043; rebote 0.6006; AR(1) 0.2901. AIC sin rampas -15.33; con rampas -56.69.</p>
+<img src="intervencion_rampas.png" alt="Trayectoria estimada del componente de intervención">
+<img src="innovaciones_comparacion_intervencion.png" alt="Innovaciones con y sin rampas">
+<h3>ACF y PACF de innovaciones con intervención</h3><img src="innovaciones_rampas_acf.png" alt="Correlogramas de innovaciones con rampas">
+<table><tr><th>Modelo</th><th>ACF 1</th><th>ACF 12</th><th>Ljung-Box Q(24)</th><th>p aproximado</th></tr><tr><td>Sin intervención</td><td>-0.010</td><td>0.223</td><td>33.483</td><td>0.0730</td></tr><tr><td>Rampas</td><td>-0.014</td><td>0.250</td><td>47.210</td><td>0.0021</td></tr></table>
+<p>La prueba usa 23 grados de libertad aproximados (24 rezagos menos un parámetro AR); la estimación de regresores y la selección exploratoria limitan la interpretación de sus valores p. La gráfica de intervención es una contribución condicionada al modelo, no un efecto causal demostrado.</p>
+<hr style="border:0;border-top:2px solid #1768ac;margin:50px 0"><h2>Experimento 4: componente MA estacional</h2>
+<p>Se mantiene la tasa rezagada nueve meses, las dos rampas, una diferencia regular y el AR(1), y se agrega un MA estacional de período 12. No se aplica diferencia estacional. Error: (1 - phi B)(1 - B) eta(t) = (1 + Theta B^12) epsilon(t). La misma muestra se utiliza en ambos modelos.</p>
+<p>Estimaciones: AR(1) 0.3577; MA estacional 0.2703; tasa 0.1638; caída -0.3559; rebote 0.6359.</p>
+<table><tr><th>Modelo</th><th>AIC</th><th>ACF 1</th><th>ACF 12</th><th>Q(24)</th><th>p aproximado</th></tr><tr><td>Rampas, sin MA estacional</td><td>-56.69</td><td>-0.014</td><td>0.250</td><td>47.210</td><td>0.0021</td></tr><tr><td>Rampas y MA estacional</td><td>-61.78</td><td>-0.037</td><td>0.039</td><td>32.246</td><td>0.0733</td></tr></table>
+<p>Ljung-Box: hasta 24 rezagos, con 23 grados de libertad aproximados para el modelo anterior y 22 para el modelo estacional. Las bandas y valores p son aproximados: se estimaron regresores y se eligieron formas y rezagos de manera exploratoria.</p>
+<img src="innovaciones_ma_estacional_tiempo.png" alt="Innovaciones antes y después de agregar el MA estacional">
+<h3>ACF y PACF de las innovaciones con MA estacional</h3><img src="innovaciones_ma_estacional_acf.png" alt="Correlogramas de las innovaciones con MA estacional">
+<h2>Experimento 5: complejidad y criterios de información</h2>
+<p>Se comparan las mismas observaciones, tasa, rampas, diferencia regular y AR(1); el segundo modelo añade un MA estacional. K incluye los coeficientes estimados y la varianza de innovaciones. n es el tamaño efectivo usado por la función de verosimilitud después de diferenciar. AICc agrega una corrección por tamaño de muestra; BIC penaliza de otra forma la complejidad. Menor es mejor dentro de esta comparación.</p>
+<table><tr><th>Modelo</th><th>n efectivo</th><th>Parámetros K</th><th>AIC</th><th>AICc</th><th>BIC</th></tr>
+<tr><td>Sin MA estacional</td><td>107</td><td>5</td><td>-56.69</td><td>-56.10</td><td>-43.33</td></tr>
+<tr><td>Con MA estacional</td><td>107</td><td>6</td><td>-61.78</td><td>-60.94</td><td>-45.74</td></tr>
+</table>
+<p>Los criterios y diagnósticos de residuos no garantizan ausencia de sobreajuste. Las fechas de intervención y el rezago de tasa fueron elegidos exploratoriamente; aún debe evaluarse con pronósticos fuera de muestra.</p>
+<h2>Experimento 6: ajuste de los modelos</h2>
+<p>La línea azul es la mora observada y la línea naranja es el ajuste de un paso dentro de la muestra. Para cada mes el ajuste utiliza información previa y parámetros estimados con toda la muestra de entrenamiento. Se omite la primera observación por inicialización. Las fechas de intervención se sombrean en gris.</p>
+<img src="comparacion_ajustes.png" alt="Mora observada y ajuste de un paso de los tres modelos">
+<p>La cercanía visual dentro de muestra no es una evaluación de pronósticos fuera de muestra.</p>
+</body></html>

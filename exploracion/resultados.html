@@ -1,5 +1,6 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8">
 <title>Exploración de la mora</title>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <style>body{font:16px system-ui;max-width:1000px;margin:40px auto;padding:0 20px;color:#203047} img{max-width:100%}table{border-collapse:collapse}td,th{padding:7px 25px 7px 0;text-align:left;border-bottom:1px solid #ddd}</style></head><body>
 <h1>Exploración de la mora</h1>
 <p>Serie mensual: 2015-01-01 a 2026-07-01 · 139 observaciones.</p>
@@ -198,6 +199,9 @@
 </table>
 <h2>11. Primer experimento: intervención y tasa</h2>
 <p>Ejemplo didáctico con datos de enero de 2015 a diciembre de 2023: cuatro modelos de regresión con errores ARIMA(1,1,0), ajustados por máxima verosimilitud. La intervención vale 1 entre marzo de 2020 y junio de 2021. La tasa se incorpora con rezago de nueve meses.</p>
+<p>En los cuatro casos el error satisface:</p> $$(1-\phi B)(1-B)\eta_t=\varepsilon_t$$
+<p>Las ecuaciones de regresión comparadas son:</p>
+$$\begin{aligned}\text{Base:}&amp;\quad y_t=\eta_t,\\ \text{Intervención:}&amp;\quad y_t=\beta_I I_t+\eta_t,\\ \text{Tasa:}&amp;\quad y_t=\beta_T x_{t-9}+\eta_t,\\ \text{Ambas:}&amp;\quad y_t=\beta_I I_t+\beta_T x_{t-9}+\eta_t.\end{aligned}$$
 <table><tr><th>Modelo</th><th>AIC</th><th>Coeficientes</th></tr>
 <tr><td>Base</td><td>-9.89</td><td>ar1 = 0.4835</td></tr>
 <tr><td>Intervención</td><td>-9.41</td><td>ar1 = 0.4912; intervencion = -0.1772</td></tr>
@@ -207,9 +211,12 @@
 <p>La diferencia se aplica al error de regresión: en niveles, mora = intervención + tasa rezagada + error ARIMA. En estos modelos no se han incluido términos estacionales ni se han diagnosticado los residuos; las cifras son exploratorias, no constituyen una selección. El rezago 9 se sugirió con la muestra completa: para evaluar pronósticos debe seleccionarse nuevamente sin usar datos futuros.</p>
 <hr style="border:0;border-top:3px solid #1768ac;margin:60px 0">
 <h1>Fase de experimentación</h1>
+<p>Notación: y<sub>t</sub> es la mora, x<sub>t-9</sub> la tasa rezagada nueve meses y B el operador de rezago. Las ecuaciones se muestran con MathJax y requieren conexión a internet.</p>
 <h2>Experimento 1: residuos de una regresión sin imponer ARIMA</h2>
 <p>Regresión por mínimos cuadrados de la mora en niveles frente a la tasa de nueve meses antes, con intercepto. Entrenamiento de enero de 2015 a diciembre de 2023, incluido el período sombreado; sin intervención explícita ni términos estacionales. No se impone una estructura AR a los residuos.</p>
 <p>Mora(t) = -0.6218 + 0.3018 × tasa(t-9) + e(t). Los coeficientes son descriptivos; la dependencia y la posible no estacionariedad limitan su inferencia.</p>
+$$y_t=\alpha+\beta x_{t-9}+e_t,\qquad \widehat e_t=y_t-\widehat\alpha-\widehat\beta x_{t-9}$$
+$$\widehat y_t=-0.6218+0.3018 x_{t-9},\qquad \Delta\widehat e_t=\Delta y_t-\widehat\beta\,\Delta x_{t-9}$$
 <p>Luego calculamos &Delta;e(t) = e(t) - e(t-1), con los mismos coeficientes de la regresión original. Por álgebra, &Delta;e(t) = &Delta;mora(t) - &beta; × &Delta;tasa(t-9). No se vuelve a estimar la regresión sobre diferencias.</p>
 <p>ACF en el rezago 1: 0.913 para los residuos y 0.456 para sus primeras diferencias.</p>
 <img src="experimento_errores.png" alt="Evolución de errores e innovaciones">
@@ -219,12 +226,17 @@
 <h2>Experimento 2: AR(1) para el error diferenciado</h2>
 <p>Se ajustan conjuntamente la regresión y el AR(1): mora(t) = &beta; tasa(t-9) + &eta;(t), u(t) = &Delta;&eta;(t), u(t) = &phi; u(t-1) + &epsilon;(t). Los coeficientes pueden cambiar respecto a la regresión inicial. No se incluyen intervención ni términos estacionales.</p>
 <p>Estimaciones: &beta; = 0.1871; &phi; = 0.4554. Las innovaciones se obtienen del ajuste de R; se omite la primera por la inicialización.</p>
+$$y_t=\beta_T x_{t-9}+\eta_t,\qquad (1-\phi B)(1-B)\eta_t=\varepsilon_t$$
+$$y_t=0.1871\,x_{t-9}+\eta_t,\qquad \Delta\eta_t=0.4554\,\Delta\eta_{t-1}+\varepsilon_t$$
 <img src="innovaciones_ar1_tiempo.png" alt="Innovaciones del modelo en el tiempo">
 <img src="innovaciones_ar1_experimento.png" alt="ACF y PACF de las innovaciones del modelo">
 <p>ACF rezago 1 = -0.010; rezago 12 = 0.223. Ljung-Box hasta rezago 24: Q = 33.483, 23 grados de libertad aproximados (descontado un parámetro AR), valor p = 0.0730. Bandas y prueba son aproximadas y se interpretan con cautela por el regresor estimado, selección del rezago y período de intervención.</p>
 <h2>Experimento 3: intervención gradual con caída y rebote</h2>
 <p>Regresión en niveles: mora(t) = beta × tasa(t-9) + b1 × caída(t) + b2 × rebote(t) + error(t), con primera diferencia del error modelada como AR(1). La rampa de caída crece de marzo a julio de 2020 y permanece en 5; la del rebote crece de agosto de 2020 a enero de 2021 y permanece en 6. Así el efecto total posterior queda constante, no se fuerza a cero. Fechas elegidas exploratoriamente.</p>
 <p>Coeficientes: tasa 0.1879; caída -0.4043; rebote 0.6006; AR(1) 0.2901. AIC sin rampas -15.33; con rampas -56.69.</p>
+$$y_t=\beta_T x_{t-9}+\beta_C C_t+\beta_R R_t+\eta_t,\qquad (1-\phi B)(1-B)\eta_t=\varepsilon_t$$
+$$y_t=0.1879\,x_{t-9}-0.4043\,C_t+0.6006\,R_t+\eta_t,\qquad \Delta\eta_t=0.2901\,\Delta\eta_{t-1}+\varepsilon_t$$
+$$C_t=\min\{5,\max(0,t-t_{\mathrm{feb 2020}})\},\qquad R_t=\min\{6,\max(0,t-t_{\mathrm{jul 2020}})\}$$
 <img src="intervencion_rampas.png" alt="Trayectoria estimada del componente de intervención">
 <img src="innovaciones_comparacion_intervencion.png" alt="Innovaciones con y sin rampas">
 <h3>ACF y PACF de innovaciones con intervención</h3><img src="innovaciones_rampas_acf.png" alt="Correlogramas de innovaciones con rampas">
@@ -233,6 +245,9 @@
 <hr style="border:0;border-top:2px solid #1768ac;margin:50px 0"><h2>Experimento 4: componente MA estacional</h2>
 <p>Se mantiene la tasa rezagada nueve meses, las dos rampas, una diferencia regular y el AR(1), y se agrega un MA estacional de período 12. No se aplica diferencia estacional. Error: (1 - phi B)(1 - B) eta(t) = (1 + Theta B^12) epsilon(t). La misma muestra se utiliza en ambos modelos.</p>
 <p>Estimaciones: AR(1) 0.3577; MA estacional 0.2703; tasa 0.1638; caída -0.3559; rebote 0.6359.</p>
+$$y_t=\beta_T x_{t-9}+\beta_C C_t+\beta_R R_t+\eta_t,\qquad (1-\phi B)(1-B)\eta_t=(1+\Theta B^{12})\varepsilon_t$$
+$$y_t=0.1638\,x_{t-9}-0.3559\,C_t+0.6359\,R_t+\eta_t$$
+$$(1-0.3577B)(1-B)\eta_t=(1+0.2703B^{12})\varepsilon_t$$
 <table><tr><th>Modelo</th><th>AIC</th><th>ACF 1</th><th>ACF 12</th><th>Q(24)</th><th>p aproximado</th></tr><tr><td>Rampas, sin MA estacional</td><td>-56.69</td><td>-0.014</td><td>0.250</td><td>47.210</td><td>0.0021</td></tr><tr><td>Rampas y MA estacional</td><td>-61.78</td><td>-0.037</td><td>0.039</td><td>32.246</td><td>0.0733</td></tr></table>
 <p>Ljung-Box: hasta 24 rezagos, con 23 grados de libertad aproximados para el modelo anterior y 22 para el modelo estacional. Las bandas y valores p son aproximados: se estimaron regresores y se eligieron formas y rezagos de manera exploratoria.</p>
 <img src="innovaciones_ma_estacional_tiempo.png" alt="Innovaciones antes y después de agregar el MA estacional">

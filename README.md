@@ -1,6 +1,6 @@
 # Pronóstico de la mora en la cartera de consumo
 
-Proyecto final de Series de Tiempo Univariadas (UNAL Medellín, 2026-II).
+Trabajo final de Series de Tiempo Univariadas (UNAL Medellín, 2026-II).
 Esteban Daza Palomino, Juan David Garro Arboleda y Sara Jurado Giraldo.
 
 ## Bases de datos
@@ -26,20 +26,31 @@ R/                    funciones propias
   caracteristicas.R     tendencia, fuerza estacional y relación con la tasa
   descriptivos.R        tabla por año y mes, perfil estacional y gráficas
   autocorrelacion.R     diferencias, ACF y PACF
+  parametros.R          fecha de corte, horizonte y número de orígenes
+  particion.R           partición en entrenamiento y evaluación
+  transformacion.R      lambda de Box-Cox (Guerrero) y variabilidad por año
+  integracion.R         diferencias candidatas y pruebas de raíz unitaria
 analisis/             scripts que se ejecutan, en orden
   01_construir_serie.R  serie, tasa, validación y características
+  02_particion.R        paso 1 de la solución: muestra y fecha de corte
+  03_transformacion.R   paso 2 de la solución: transformación
+  04_integracion.R      paso 3 de la solución: orden de integración
 analisis_inicial.qmd  documento con el análisis inicial (se renderiza a HTML)
 datos/crudos/         archivos originales que no se descargan por código
 datos/procesados/     salidas de los scripts (no se versionan)
 ```
 
-## Ejecución
+## Cómo ejecutar
 
 Abrir `proyecto_mora.Rproj` en RStudio y, en la consola:
 
 ```r
-install.packages(c("dplyr", "tidyr", "purrr", "readr", "readxl", "lubridate", "tibble", "ggplot2", "knitr", "rmarkdown"))
+install.packages(c("dplyr", "tidyr", "purrr", "readr", "readxl", "lubridate", "tibble", "ggplot2", "knitr", "rmarkdown",
+                   "tsibble", "fable", "feasts", "fabletools", "urca", "forecast", "uroot"))
 source("analisis/01_construir_serie.R", encoding = "UTF-8")
+source("analisis/02_particion.R", encoding = "UTF-8")
+source("analisis/03_transformacion.R", encoding = "UTF-8")
+source("analisis/04_integracion.R", encoding = "UTF-8")
 ```
 
 Después se abre `analisis_inicial.qmd` y se presiona **Render**. Sale `analisis_inicial.html`,
@@ -47,14 +58,30 @@ un solo archivo que se puede abrir en cualquier navegador.
 
 El script 01 descarga los datos de la API (`usar_api <- TRUE`). Si la API no responde, se
 pueden exportar los CSV desde el portal de datos.gov.co, guardarlos en `datos/crudos/` con los
-nombres indicados en el script y cambiar a `usar_api <- FALSE`. La fecha de corte se cambia en
-`fecha_corte`.
+nombres indicados en el script y cambiar a `usar_api <- FALSE`.
+
+## Parámetros
+
+Los únicos valores que se fijan a mano están en `R/parametros.R`: la fecha de corte (`FECHA_CORTE`),
+el horizonte de pronóstico (`HORIZONTE`) y el número de orígenes de la validación (`N_ORIGENES`).
+El último mes de entrenamiento se calcula a partir de ellos: fecha de corte menos
+`N_ORIGENES + HORIZONTE` meses. Con los valores actuales (julio de 2026, 6 y 25), el
+entrenamiento va hasta diciembre de 2023.
 
 ## Salidas
 
 - `serie_mora.csv`: fecha, número de entidades, saldo, saldo vigente, saldo vencido e índice de mora (%).
 - `tibc_mensual.csv`: tasa de interés bancario corriente de consumo, mes a mes.
 - `validacion_icv.csv`: índice construido frente al indicador oficial, con y sin castigos (2015-2023).
+- `serie_partida.csv`: fecha, índice de mora y muestra (entrenamiento o evaluación).
+- `particion.csv`: fechas y meses de entrenamiento y evaluación, con el primer y último origen.
+- `transformacion_lambda.csv`: lambda de Guerrero con el entrenamiento y con los datos anteriores a los alivios.
+- `transformacion_anual.csv` y `transformacion_correlacion.csv`: media y desviación de cada año y su correlación.
+- `integracion_resumen.csv`: varianza y ACF en los rezagos 1 y 12 de cada diferenciación candidata.
+- `integracion_pruebas.csv`: KPSS y ADF sobre cada diferenciación.
+- `integracion_sugeridas.csv`: diferencias regulares y estacionales que sugieren ndiffs y nsdiffs.
 - `caracteristicas_serie.csv`: resumen de la serie (rango, volatilidad, fuerza estacional, efecto de diciembre, caída por los alivios y rezago de la tasa).
 
+## Pendiente
 
+- Declarar el entorno con `renv` (`renv::init()`) y fijar las versiones de los paquetes.

@@ -1,0 +1,62 @@
+
+---
+title: "Pronóstico de la mora en la cartera de consumo en Colombia"
+subtitle: "Hito 3: revisión de literatura (borrador de trabajo)"
+author:
+  - "Esteban Daza Palomino"
+  - "Juan David Garro Arboleda"
+  - "Sara Jurado Giraldo"
+lang: es
+format:
+  html:
+    toc: true
+  pdf:
+    toc: true
+bibliography: referencias.bib
+citeproc: true
+---
+
+# Estrategia de búsqueda y criterios de selección
+
+La revisión se centra en investigaciones sobre el pronóstico de la cartera vencida, la morosidad crediticia y los préstamos improductivos (*non-performing loans*, NPL). Se consideran trabajos sobre índices agregados y sobre carteras de consumo, así como estudios del mismo dominio que permitan contrastar metodologías y resultados. El propósito es identificar la evidencia predictiva disponible y establecer qué aspectos del diseño propuesto —pronósticos mensuales a tres y seis meses, intervención por los alivios de 2020–2021 y comparación fuera de muestra— cuentan con antecedentes verificables.
+
+La búsqueda inicial se realizó mediante el rastreo de referencias del H2 en IDEAS/RePEc y páginas de editoriales, junto con consultas sobre *non-performing loans forecasting*, *credit delinquency forecasting*, *SARIMA* y *out-of-sample forecast*. Se consideran fuentes arbitradas y documentos institucionales, priorizando aquellos que especifican datos, método y evaluación. Se excluyen de la tabla predictiva los textos exclusivamente metodológicos, las referencias sin relación con la mora y los estudios puramente explicativos que no realizan pronósticos; estos últimos podrán aparecer como contexto, identificados como tales. **Pendiente:** registrar fechas y cadenas exactas de búsqueda antes de entregar.
+
+# Evidencia revisada
+
+## Pronóstico de la mora mediante modelos de series de tiempo
+
+Tori, Gjeci y Kufo (@tori2024) estudian la razón mensual de créditos en mora del sistema bancario albanés entre diciembre de 2015 y diciembre de 2022, incluyendo el periodo de la pandemia. El resumen accesible del artículo señala que seleccionan un modelo SARIMA $(0,1,1)\times(2,2,2)_{12}$ y proyectan una trayectoria relativamente estable, con una ligera disminución posterior. **Pendiente:** verificar en el texto completo el horizonte específico, las métricas y los resultados de evaluación antes de compararlos cuantitativamente con otros estudios.
+
+Cortés y Soriano (@cortes2024) examinan datos trimestrales de préstamos de consumo e hipotecarios de ocho países entre 1992 y 2019 mediante paneles dinámicos y variables macroeconómicas. Evalúan capacidades predictivas dentro y fuera de muestra, y reportan un mejor comportamiento de pronóstico para las hipotecas que para los préstamos de consumo. Aunque la frecuencia y el enfoque difieren de los de este proyecto, el estudio permite discutir el papel de variables económicas en la predicción de la mora. **Pendiente:** extraer del artículo las métricas y magnitudes publicadas por cartera y horizonte.
+
+Abdullah y colaboradores (@abdullah2023) comparan catorce modelos lineales y no lineales para el pronóstico de préstamos improductivos utilizando datos trimestrales de 322 bancos en quince países emergentes. Según el resumen editorial, *random forest* obtiene la mejor clasificación entre los modelos examinados, con una exactitud reportada del 76,10 %. Este valor no es comparable directamente con MASE o RMSE de un pronóstico de una serie agregada; por eso se registra la métrica con su denominación original y no se utiliza para inferir que este método superaría al SARIMA del proyecto.
+
+## Evidencia sobre la dinámica colombiana
+
+Gamba-Santamaría, Melo-Velandia y Orozco-Vanegas (@gamba2021) descomponen el comportamiento de la cartera en mora a partir de cosechas de crédito, distinguiendo la capacidad de pago de los deudores y la toma de riesgo del sistema financiero. El estudio contribuye a interpretar los posibles mecanismos económicos detrás del comportamiento de la mora colombiana. **No debe presentarse como una prueba de superioridad predictiva** si no se identifican en el documento evaluaciones comparables fuera de muestra.
+
+# Comparación de la literatura
+
+| Fuente | Datos | Método | Horizonte | Métrica | Resultado publicado / verificable |
+|---|---|---|---|---|---|
+| @tori2024 | Albania; razón de mora bancaria mensual, dic. 2015–dic. 2022 | SARIMA $(0,1,1)\times(2,2,2)_{12}$ | Por verificar en texto completo | Por verificar | Proyecta estabilidad con leve descenso; falta extraer evaluación numérica |
+| @cortes2024 | Ocho países; mora de consumo e hipotecaria, datos trimestrales 1992–2019 | Panel dinámico y determinantes macroeconómicos | Por verificar en texto completo | Por verificar | Mejor desempeño predictivo de hipotecas; falta extraer cifras |
+| @abdullah2023 | 322 bancos; 15 países emergentes; datos trimestrales | 14 modelos, incluyendo *random forest* | No reporta en resumen consultado | Exactitud (76,10 %) | *Random forest* registra el mejor resultado según el resumen editorial |
+| @gamba2021 | Colombia; cosechas de crédito | Descomposición de componentes de la cartera en mora | No aplica a la síntesis consultada | No reporta evaluación predictiva | Relaciona capacidad de pago y toma de riesgo con condiciones económicas y financieras |
+
+**Advertencia:** esta tabla es una matriz preliminar; cuatro fuentes todavía no satisfacen el requisito de ocho a doce. Las celdas «por verificar» indican trabajo documental pendiente y deben resolverse antes de entregar; «no reporta» se usa únicamente cuando la ausencia se confirma en la fuente consultada.
+
+# Brecha de investigación (hipótesis pendiente de contrastar)
+
+La evidencia inicial muestra distintos enfoques para estudiar la morosidad crediticia, desde modelos SARIMA de índices mensuales hasta métodos de panel y aprendizaje automático aplicados a carteras o bancos individuales. También existe investigación institucional colombiana que ayuda a interpretar la dinámica de la mora. Antes de afirmar una brecha, es necesario completar la comparación de ocho a doce trabajos y establecer cuáles informan errores fuera de muestra, horizontes de tres y seis meses, tratamiento de la pandemia o contraste contra referentes simples. **Este párrafo es un marcador de trabajo, no la conclusión final de la revisión.**
+
+# Pendientes antes de la entrega
+
+- Completar entre ocho y doce fuentes relevantes, al menos cuatro arbitradas o institucionales.
+- Consultar los textos completos y sustituir todas las marcas «por verificar».
+- Documentar las cadenas y fechas efectivas de búsqueda.
+- Completar una tabla homogénea con horizonte, métrica y resultado de cada estudio cuando se reporten.
+- Redactar la brecha a partir de evidencia comparada, no de una presunción de novedad.
+- Alinear con el H2 corregido (referentes, tasa rezagada y regla de evaluación).
+- Declarar el uso de IA en la versión final según las instrucciones del curso.

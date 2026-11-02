@@ -29,7 +29,7 @@ execute:
 #| label: preparacion
 #| include: false
 
-# Antes de renderizar hay que correr los scripts de analisis/ en orden (01 a 05),
+# Antes de renderizar hay que correr los scripts de analisis/ en orden (01 a 06),
 # que dejan los CSV en datos/procesados/ y las figuras en figuras/modelo/
 
 library(dplyr)
@@ -335,6 +335,9 @@ acf_pre     <- leer("identificacion_acf_pre_alivios.csv")
 automatica  <- leer("identificacion_automatica.csv")
 candidatos  <- leer("identificacion_candidatos.csv")
 descartados <- leer("identificacion_descartados.csv")
+coeficientes <- leer("estimacion_coeficientes.csv")
+comparacion  <- leer("estimacion_comparacion.csv")
+seleccion    <- leer("estimacion_seleccion.csv")
 
 si_no <- function(x) if_else(x, "Sí", "No")
 fila  <- function(d, muestra_inicio, i) filter(d, startsWith(muestra, muestra_inicio))[i, ]
@@ -346,6 +349,14 @@ pru_tr <- function(i) fila(int_pruebas, "Entrenamiento", i)
 pru_pre <- function(i) fila(int_pruebas, "Antes", i)
 
 anual_normal <- filter(anual, !anio %in% c(2020, 2021, 2023))
+
+# Estimación
+coef_de <- function(mod, term) filter(coeficientes, modelo == mod, termino == term)
+comp_de <- function(mod) filter(comparacion, modelo == mod)
+mod_aicc <- seleccion$modelo[grepl("AICc", seleccion$criterio)]
+mod_bic  <- seleccion$modelo[grepl("BIC", seleccion$criterio)]
+sin_ar   <- comparacion$modelo[grepl("^SARIMA\\(0,1,0\\)", comparacion$modelo)]
+ma_est   <- comparacion$modelo[grepl("\\(0,0,1\\)12$", comparacion$modelo)]
 ```
 
 ## Muestra y Fecha de Corte
@@ -559,3 +570,56 @@ descartados |>
   transmute(Modelo = modelo, `Razón` = razon) |>
   knitr::kable(caption = "Modelos considerados y descartados en la identificación.")
 ```
+
+## Estimación y Selección
+
+Estimamos los cuatro candidatos por máxima verosimilitud con el entrenamiento. Todavía no incluyen
+ninguna variable para los alivios: la necesidad de hacerlo la debe mostrar el diagnóstico de
+residuos. Como todos tienen la misma diferenciación y la misma muestra efectiva
+(`r comparacion$n[1]` meses), sus criterios de información se pueden comparar.
+
+```{r}
+#| label: tabla-coeficientes
+
+coeficientes |>
+  transmute(Modelo = modelo, `Término` = termino, `Estimación` = num(estimacion, 3),
+            `Error estándar` = num(error_estandar, 3), z = num(z), `Valor p` = num(valor_p, 3)) |>
+  knitr::kable(align = "llrrrr", caption = "Coeficientes estimados con su incertidumbre.")
+```
+
+```{r}
+#| label: tabla-comparacion
+
+comparacion |>
+  transmute(Modelo = modelo, `Parámetros` = parametros, AICc = num(aicc), `ΔAICc` = num(delta_aicc),
+            BIC = num(bic), `σ²` = num(sigma2, 4),
+            `Todos significativos` = si_no(todos_significativos),
+            `Estacionario e invertible` = si_no(estacionario & invertible)) |>
+  knitr::kable(align = "lrrrrrcc", caption = "Comparación de los candidatos, de menor a mayor AICc.")
+```
+
+Todos los modelos son estacionarios e invertibles: las raíces de sus polinomios autorregresivos y de
+medias móviles quedan fuera del círculo unitario.
+
+El menor AICc lo tiene el `r mod_aicc`, con `r comp_de(mod_aicc)$parametros` parámetros. Pero su
+segundo término autorregresivo estacional no es significativo (z = `r num(coef_de(mod_aicc, "sar2")$z)`),
+y sus tres medias móviles (`r num(coef_de(mod_aicc, "ma1")$estimacion)`,
+`r num(coef_de(mod_aicc, "ma2")$estimacion)` y `r num(coef_de(mod_aicc, "ma3")$estimacion)`) se
+parecen a los pesos que tendría un AR(1) escrito como medias móviles, solo que más grandes. Es
+probable que esos parámetros de más estén absorbiendo la caída y el rebote de 2020.
+
+El menor BIC, que castiga más los parámetros, lo tiene el `r mod_bic`. Sus dos coeficientes son muy
+significativos (φ = `r num(coef_de(mod_bic, "ar1")$estimacion)` con z = `r num(coef_de(mod_bic, "ar1")$z, 1)`
+y Φ = `r num(coef_de(mod_bic, "sar1")$estimacion)` con z = `r num(coef_de(mod_bic, "sar1")$z, 1)`), y
+queda a `r num(comp_de(mod_bic)$delta_aicc, 1)` puntos de AICc del primero. Es el modelo que
+sugería la identificación.
+
+Las otras dos comparaciones confirman lo que se vio en la ACF y la PACF. El AR estacional se ajusta
+mejor que el MA estacional (el `r ma_est` queda a `r num(comp_de(ma_est)$delta_aicc, 1)` puntos), y
+quitar el AR(1) regular empeora el AICc en `r num(comp_de(sin_ar)$delta_aicc, 1)` puntos, así que
+ese término hace falta.
+
+Los dos criterios no eligen el mismo modelo, y la diferencia en AICc es moderada. Por eso no
+cambiamos la regla para quedarnos con uno: los dos pasan al diagnóstico, y la selección se repite
+cuando se incorpore la intervención. Si el modelo de cinco parámetros solo ganaba por absorber la
+pandemia, ahí va a perder su ventaja.

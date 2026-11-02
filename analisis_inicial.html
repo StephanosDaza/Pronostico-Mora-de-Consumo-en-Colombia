@@ -2368,6 +2368,7 @@ window.Quarto = {
   <li><a href="#transformación" id="toc-transformación" class="nav-link" data-scroll-target="#transformación"><span class="header-section-number">8.2</span> Transformación</a></li>
   <li><a href="#orden-de-integración" id="toc-orden-de-integración" class="nav-link" data-scroll-target="#orden-de-integración"><span class="header-section-number">8.3</span> Orden de Integración</a></li>
   <li><a href="#identificación" id="toc-identificación" class="nav-link" data-scroll-target="#identificación"><span class="header-section-number">8.4</span> Identificación</a></li>
+  <li><a href="#estimación-y-selección" id="toc-estimación-y-selección" class="nav-link" data-scroll-target="#estimación-y-selección"><span class="header-section-number">8.5</span> Estimación y Selección</a></li>
   </ul></li>
   </ul>
 </nav>
@@ -3478,6 +3479,209 @@ Figura 11: ACF y PACF de la serie con diferencia regular, entrenamiento.
 </table>
 </div>
 </div>
+</section>
+<section id="estimación-y-selección" class="level2" data-number="8.5">
+<h2 data-number="8.5" class="anchored" data-anchor-id="estimación-y-selección"><span class="header-section-number">8.5</span> Estimación y Selección</h2>
+<p>Estimamos los cuatro candidatos por máxima verosimilitud con el entrenamiento. Todavía no incluyen ninguna variable para los alivios: la necesidad de hacerlo la debe mostrar el diagnóstico de residuos. Como todos tienen la misma diferenciación y la misma muestra efectiva (107 meses), sus criterios de información se pueden comparar.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>coeficientes <span class="sc">|&gt;</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">Modelo =</span> modelo, <span class="st">`</span><span class="at">Término</span><span class="st">`</span> <span class="ot">=</span> termino, <span class="st">`</span><span class="at">Estimación</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">num</span>(estimacion, <span class="dv">3</span>),</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>            <span class="st">`</span><span class="at">Error estándar</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">num</span>(error_estandar, <span class="dv">3</span>), <span class="at">z =</span> <span class="fu">num</span>(z), <span class="st">`</span><span class="at">Valor p</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">num</span>(valor_p, <span class="dv">3</span>)) <span class="sc">|&gt;</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">align =</span> <span class="st">&quot;llrrrr&quot;</span>, <span class="at">caption =</span> <span class="st">&quot;Coeficientes estimados con su incertidumbre.&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Coeficientes estimados con su incertidumbre.</caption>
+<colgroup>
+<col style="width: 32%">
+<col style="width: 11%">
+<col style="width: 15%">
+<col style="width: 21%">
+<col style="width: 7%">
+<col style="width: 11%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Modelo</th>
+<th style="text-align: left;">Término</th>
+<th style="text-align: right;">Estimación</th>
+<th style="text-align: right;">Error estándar</th>
+<th style="text-align: right;">z</th>
+<th style="text-align: right;">Valor p</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(1,1,0)(1,0,0)12</td>
+<td style="text-align: left;">ar1</td>
+<td style="text-align: right;">0,555</td>
+<td style="text-align: right;">0,083</td>
+<td style="text-align: right;">6,72</td>
+<td style="text-align: right;">0,000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(1,1,0)(1,0,0)12</td>
+<td style="text-align: left;">sar1</td>
+<td style="text-align: right;">0,293</td>
+<td style="text-align: right;">0,097</td>
+<td style="text-align: right;">3,01</td>
+<td style="text-align: right;">0,003</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(1,1,0)(0,0,1)12</td>
+<td style="text-align: left;">ar1</td>
+<td style="text-align: right;">0,536</td>
+<td style="text-align: right;">0,083</td>
+<td style="text-align: right;">6,43</td>
+<td style="text-align: right;">0,000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(1,1,0)(0,0,1)12</td>
+<td style="text-align: left;">sma1</td>
+<td style="text-align: right;">0,231</td>
+<td style="text-align: right;">0,091</td>
+<td style="text-align: right;">2,54</td>
+<td style="text-align: right;">0,011</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(0,1,3)(2,0,0)12</td>
+<td style="text-align: left;">ma1</td>
+<td style="text-align: right;">0,526</td>
+<td style="text-align: right;">0,097</td>
+<td style="text-align: right;">5,44</td>
+<td style="text-align: right;">0,000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(0,1,3)(2,0,0)12</td>
+<td style="text-align: left;">ma2</td>
+<td style="text-align: right;">0,509</td>
+<td style="text-align: right;">0,101</td>
+<td style="text-align: right;">5,04</td>
+<td style="text-align: right;">0,000</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(0,1,3)(2,0,0)12</td>
+<td style="text-align: left;">ma3</td>
+<td style="text-align: right;">0,240</td>
+<td style="text-align: right;">0,088</td>
+<td style="text-align: right;">2,73</td>
+<td style="text-align: right;">0,006</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(0,1,3)(2,0,0)12</td>
+<td style="text-align: left;">sar1</td>
+<td style="text-align: right;">0,286</td>
+<td style="text-align: right;">0,099</td>
+<td style="text-align: right;">2,88</td>
+<td style="text-align: right;">0,004</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(0,1,3)(2,0,0)12</td>
+<td style="text-align: left;">sar2</td>
+<td style="text-align: right;">0,170</td>
+<td style="text-align: right;">0,098</td>
+<td style="text-align: right;">1,73</td>
+<td style="text-align: right;">0,083</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(0,1,0)(1,0,0)12</td>
+<td style="text-align: left;">sar1</td>
+<td style="text-align: right;">0,103</td>
+<td style="text-align: right;">0,100</td>
+<td style="text-align: right;">1,03</td>
+<td style="text-align: right;">0,303</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Ver código</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>comparacion <span class="sc">|&gt;</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">Modelo =</span> modelo, <span class="st">`</span><span class="at">Parámetros</span><span class="st">`</span> <span class="ot">=</span> parametros, <span class="at">AICc =</span> <span class="fu">num</span>(aicc), <span class="st">`</span><span class="at">ΔAICc</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">num</span>(delta_aicc),</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">BIC =</span> <span class="fu">num</span>(bic), <span class="st">`</span><span class="at">σ²</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">num</span>(sigma2, <span class="dv">4</span>),</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>            <span class="st">`</span><span class="at">Todos significativos</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">si_no</span>(todos_significativos),</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>            <span class="st">`</span><span class="at">Estacionario e invertible</span><span class="st">`</span> <span class="ot">=</span> <span class="fu">si_no</span>(estacionario <span class="sc">&amp;</span> invertible)) <span class="sc">|&gt;</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  knitr<span class="sc">::</span><span class="fu">kable</span>(<span class="at">align =</span> <span class="st">&quot;lrrrrrcc&quot;</span>, <span class="at">caption =</span> <span class="st">&quot;Comparación de los candidatos, de menor a mayor AICc.&quot;</span>)</span></code></pre></div><button title="Copiar al portapapeles" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Comparación de los candidatos, de menor a mayor AICc.</caption>
+<colgroup>
+<col style="width: 21%">
+<col style="width: 10%">
+<col style="width: 6%">
+<col style="width: 5%">
+<col style="width: 5%">
+<col style="width: 6%">
+<col style="width: 20%">
+<col style="width: 24%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Modelo</th>
+<th style="text-align: right;">Parámetros</th>
+<th style="text-align: right;">AICc</th>
+<th style="text-align: right;">ΔAICc</th>
+<th style="text-align: right;">BIC</th>
+<th style="text-align: right;">σ²</th>
+<th style="text-align: center;">Todos significativos</th>
+<th style="text-align: center;">Estacionario e invertible</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(0,1,3)(2,0,0)12</td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">-19,69</td>
+<td style="text-align: right;">0,00</td>
+<td style="text-align: right;">-4,49</td>
+<td style="text-align: right;">0,0441</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Sí</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(1,1,0)(1,0,0)12</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-16,03</td>
+<td style="text-align: right;">3,66</td>
+<td style="text-align: right;">-8,24</td>
+<td style="text-align: right;">0,0478</td>
+<td style="text-align: center;">Sí</td>
+<td style="text-align: center;">Sí</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">SARIMA(1,1,0)(0,0,1)12</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">-13,93</td>
+<td style="text-align: right;">5,76</td>
+<td style="text-align: right;">-6,14</td>
+<td style="text-align: right;">0,0490</td>
+<td style="text-align: center;">Sí</td>
+<td style="text-align: center;">Sí</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">SARIMA(0,1,0)(1,0,0)12</td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">17,77</td>
+<td style="text-align: right;">37,46</td>
+<td style="text-align: right;">23,00</td>
+<td style="text-align: right;">0,0671</td>
+<td style="text-align: center;">No</td>
+<td style="text-align: center;">Sí</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<p>Todos los modelos son estacionarios e invertibles: las raíces de sus polinomios autorregresivos y de medias móviles quedan fuera del círculo unitario.</p>
+<p>El menor AICc lo tiene el SARIMA(0,1,3)(2,0,0)12, con 5 parámetros. Pero su segundo término autorregresivo estacional no es significativo (z = 1,73), y sus tres medias móviles (0,53, 0,51 y 0,24) se parecen a los pesos que tendría un AR(1) escrito como medias móviles, solo que más grandes. Es probable que esos parámetros de más estén absorbiendo la caída y el rebote de 2020.</p>
+<p>El menor BIC, que castiga más los parámetros, lo tiene el SARIMA(1,1,0)(1,0,0)12. Sus dos coeficientes son muy significativos (φ = 0,55 con z = 6,7 y Φ = 0,29 con z = 3,0), y queda a 3,7 puntos de AICc del primero. Es el modelo que sugería la identificación.</p>
+<p>Las otras dos comparaciones confirman lo que se vio en la ACF y la PACF. El AR estacional se ajusta mejor que el MA estacional (el SARIMA(1,1,0)(0,0,1)12 queda a 5,8 puntos), y quitar el AR(1) regular empeora el AICc en 37,5 puntos, así que ese término hace falta.</p>
+<p>Los dos criterios no eligen el mismo modelo, y la diferencia en AICc es moderada. Por eso no cambiamos la regla para quedarnos con uno: los dos pasan al diagnóstico, y la selección se repite cuando se incorpore la intervención. Si el modelo de cinco parámetros solo ganaba por absorber la pandemia, ahí va a perder su ventaja.</p>
 </section>
 </section>
 

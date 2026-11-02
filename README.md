@@ -30,17 +30,19 @@ R/                    funciones propias
   particion.R           partición en entrenamiento y evaluación
   transformacion.R      lambda de Box-Cox (Guerrero) y variabilidad por año
   integracion.R         diferencias candidatas y pruebas de raíz unitaria
+  identificacion.R      tabla de ACF y PACF y búsqueda automática del SARIMA
 analisis/             scripts que se ejecutan, en orden
   01_construir_serie.R  serie, tasa, validación y características
   02_particion.R        paso 1 de la solución: muestra y fecha de corte
   03_transformacion.R   paso 2 de la solución: transformación
   04_integracion.R      paso 3 de la solución: orden de integración
+  05_identificacion.R   paso 4 de la solución: identificación y modelos candidatos
 analisis_inicial.qmd  documento con el análisis inicial (se renderiza a HTML)
 datos/crudos/         archivos originales que no se descargan por código
 datos/procesados/     salidas de los scripts (no se versionan)
 ```
 
-## Cómo ejecutar
+## Ejecución
 
 Abrir `proyecto_mora.Rproj` en RStudio y, en la consola:
 
@@ -51,6 +53,7 @@ source("analisis/01_construir_serie.R", encoding = "UTF-8")
 source("analisis/02_particion.R", encoding = "UTF-8")
 source("analisis/03_transformacion.R", encoding = "UTF-8")
 source("analisis/04_integracion.R", encoding = "UTF-8")
+source("analisis/05_identificacion.R", encoding = "UTF-8")
 ```
 
 Después se abre `analisis_inicial.qmd` y se presiona **Render**. Sale `analisis_inicial.html`,
@@ -80,8 +83,8 @@ entrenamiento va hasta diciembre de 2023.
 - `integracion_resumen.csv`: varianza y ACF en los rezagos 1 y 12 de cada diferenciación candidata.
 - `integracion_pruebas.csv`: KPSS y ADF sobre cada diferenciación.
 - `integracion_sugeridas.csv`: diferencias regulares y estacionales que sugieren ndiffs y nsdiffs.
+- `identificacion_acf_entrenamiento.csv` y `identificacion_acf_pre_alivios.csv`: ACF y PACF de la serie con diferencia regular.
+- `identificacion_automatica.csv`: modelo que propone la búsqueda automática.
+- `identificacion_candidatos.csv` e `identificacion_descartados.csv`: modelos candidatos para la estimación y modelos descartados, con su justificación.
 - `caracteristicas_serie.csv`: resumen de la serie (rango, volatilidad, fuerza estacional, efecto de diciembre, caída por los alivios y rezago de la tasa).
 
-## Pendiente
-
-- Declarar el entorno con `renv` (`renv::init()`) y fijar las versiones de los paquetes.

@@ -5,18 +5,17 @@ library(dplyr)
 
 for (f in list.files("R", pattern = "\\.R$", full.names = TRUE)) source(f, encoding = "UTF-8")
 
-# Parámetros
-fecha_corte <- as.Date("2026-07-31")
+# Parámetros (la fecha de corte está en R/parametros.R)
 usar_api    <- TRUE   # FALSE: leer los CSV de datos/crudos
 ruta_cartera_csv <- "datos/crudos/Distribucion_de_cartera_por_producto.csv"
 ruta_tibc_csv    <- "datos/crudos/Tasa_de_interes_bancario_corriente_TIBC.csv"
 
 # Datos
 if (usar_api) {
-  cartera <- descargar_cartera_consumo(fecha_corte)
+  cartera <- descargar_cartera_consumo(FECHA_CORTE)
   tibc    <- descargar_tibc()
 } else {
-  cartera <- leer_cartera_csv(ruta_cartera_csv, fecha_corte)
+  cartera <- leer_cartera_csv(ruta_cartera_csv, FECHA_CORTE)
   tibc    <- descargar_tibc(ruta_tibc_csv)
 }
 

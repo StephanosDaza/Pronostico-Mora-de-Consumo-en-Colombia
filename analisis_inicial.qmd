@@ -1,6 +1,6 @@
 ---
 title: "Proyecto Índice de mora de la cartera de consumo"
-subtitle: "Análisis Exploratorio Incial"
+subtitle: "Análisis Exploratorio y Construcción del Modelo"
 author:
   - Esteban Daza Palomino
   - Juan David Garro Arboleda
@@ -29,8 +29,8 @@ execute:
 #| label: preparacion
 #| include: false
 
-# Antes de renderizar hay que correr analisis/01_construir_serie.R,
-# que deja los CSV en datos/procesados/
+# Antes de renderizar hay que correr los scripts de analisis/ en orden (01 a 06),
+# que dejan los CSV en datos/procesados/ y las figuras en figuras/modelo/
 
 library(dplyr)
 library(ggplot2)
@@ -79,7 +79,7 @@ entidades.
 | Calidad de cartera, histórico (`icv_historia.xlsx`) | Superintendencia Financiera | Validar el índice construido |
 | Calidad de cartera incluido castigos (`icv_cas_historia.xlsx`) | Superintendencia Financiera | Revisar el efecto de diciembre |
 
-# Validación de la Serie Vs. IDC Oficial
+# Validación de la Serie Vs. ICV Oficial
 
 Antes de usar la serie había que confirmar que el cálculo coincide con lo que publica la
 Superintendencia. El histórico oficial llega hasta diciembre de 2023, así que la comparación cubre
@@ -265,23 +265,11 @@ acf_ambas <- tabla_dif$r12[tabla_dif$dif == "ambas"]
 acf_est_1 <- tabla_dif$r1[tabla_dif$dif == "estacional"]
 ```
 
-Con las dos diferencias aparece una autocorrelación de `r num(acf_ambas)` en el rezago 12, cerca
-del −0,5 que deja diferenciar de más. Además, la diferencia estacional ya contiene a la regular,
-porque $1 - B^{12} = (1 - B)(1 + B + \dots + B^{11})$, de modo que aplicar también la regular
-puede sobrar. Por eso trabajamos solo con la diferencia estacional:
-
-```{r}
-#| label: fig-acf-estacional
-#| fig-cap: "ACF y PACF del índice de mora con diferencia estacional."
-
-grafico_acf_pacf(total, diferencia = "estacional")
-```
-
-Con la diferencia estacional la ACF en el rezago 1 sigue alta (`r num(acf_est_1)`) y baja despacio,
-así que la parte autorregresiva del modelo va a tener que recoger esa persistencia. Los órdenes
-del SARIMA(p,0,q)(P,1,Q)~12~ los vamos a identificar con la muestra de entrenamiento y a respaldar
-la diferenciación con pruebas de raíz unitaria. Esta mirada todavía incluye el quiebre de
-2020-2021.
+La diferencia estacional sola deja la ACF en el rezago 1 en `r num(acf_est_1)`: la persistencia
+sigue ahí. Con las dos diferencias aparece una autocorrelación de `r num(acf_ambas)` en el rezago
+12, cerca del −0,5 que deja diferenciar de más. La diferencia regular sola no muestra ninguno de
+los dos problemas. Esta mirada incluye toda la serie y el quiebre de 2020-2021; la decisión se toma
+en la construcción del modelo, con la muestra de entrenamiento y pruebas formales.
 
 # Tasa de interés como covariable
 
@@ -309,21 +297,329 @@ total |>
 La tasa sube primero y la mora la sigue meses después: el ciclo de alzas de 2022 y 2023 coincide
 con el máximo de mora de `r lubridate::year(car$fecha_max)`. Comparando los cambios
 mensuales de las dos series, sin 2020-2021, la correlación más alta con rezagos de 6 a 12 meses
-aparece a los `r car$rezago_tasa` meses (`r num(car$corr_tasa)`). Como la tasa entra
-con un rezago de al menos seis meses, para pronosticar hasta ese horizonte se usan valores ya
-observados y no hay que pronosticar también la tasa.
-
+aparece a los `r car$rezago_tasa` meses (`r num(car$corr_tasa)`). Este cálculo usa toda la serie,
+así que solo sirve como referencia: el rezago que entra al modelo se elige con la muestra de
+entrenamiento. Como la tasa entra con un rezago de al menos seis meses, para pronosticar hasta ese
+horizonte se usan valores ya observados y no hay que pronosticar también la tasa.
 
 # Finalización análisis exploratorio
 
 Con esto termina la etapa exploratoria. La serie quedó construida y validada contra el indicador
-oficial, y con lo que encontramos ya están definidos los elementos del modelo: la estacionalidad
-se trata con la diferencia estacional, el periodo de los alivios con análisis de intervención y
-la tasa de interés entra como posible regresora con un rezago de al menos seis meses.
+oficial, y ya conocemos sus rasgos principales: una estacionalidad clara, con diciembre bajo y abril
+y mayo altos; un quiebre por los alivios de 2020 y 2021, con caída y rebote; y una relación con la
+tasa de interés que aparece con varios meses de rezago.
 
-La siguiente etapa es la de identificación y estimación del modelo. Con la muestra de
-entrenamiento (enero de 2015 a diciembre de 2023) vamos a proponer los órdenes del
-SARIMA(p,0,q)(P,1,Q)~12~, comparar las formas de la intervención y revisar los residuos. 
-Después el modelo elegido se evalúa con origen móvil frente al pronóstico naive estacional 
-y un modelo de suavizamiento exponencial, con MASE y RMSE por horizonte, cobertura de los
-intervalos y la prueba de Diebold-Mariano.
+La siguiente etapa es la construcción del modelo, que seguimos en el orden de la metodología de Box
+y Jenkins: muestra, transformación, orden de integración, identificación, estimación, selección,
+diagnóstico y tratamiento de atípicos e intervenciones. Después, el modelo elegido se evalúa con
+origen móvil frente al pronóstico naive estacional y un modelo de suavizamiento exponencial, con
+MASE y RMSE por horizonte, cobertura de los intervalos y la prueba de Diebold-Mariano.
+
+# Construcción del Modelo
+
+```{r}
+#| label: preparacion-modelo
+#| include: false
+
+leer <- function(archivo) readr::read_csv(file.path("datos/procesados", archivo), show_col_types = FALSE)
+
+particion   <- leer("particion.csv")
+lambdas     <- leer("transformacion_lambda.csv")
+anual       <- leer("transformacion_anual.csv")
+corr_trans  <- leer("transformacion_correlacion.csv")
+int_resumen <- leer("integracion_resumen.csv")
+int_pruebas <- leer("integracion_pruebas.csv")
+int_sug     <- leer("integracion_sugeridas.csv")
+acf_tr      <- leer("identificacion_acf_entrenamiento.csv")
+acf_pre     <- leer("identificacion_acf_pre_alivios.csv")
+automatica  <- leer("identificacion_automatica.csv")
+candidatos  <- leer("identificacion_candidatos.csv")
+descartados <- leer("identificacion_descartados.csv")
+coeficientes <- leer("estimacion_coeficientes.csv")
+comparacion  <- leer("estimacion_comparacion.csv")
+seleccion    <- leer("estimacion_seleccion.csv")
+
+si_no <- function(x) if_else(x, "Sí", "No")
+fila  <- function(d, muestra_inicio, i) filter(d, startsWith(muestra, muestra_inicio))[i, ]
+acf_en <- function(d, k, f = "ACF") d[[f]][d$rezago == k]
+
+# Orden de las diferenciaciones en las tablas: 1 sin diferenciar, 2 regular, 3 estacional, 4 ambas
+res_tr <- function(i) fila(int_resumen, "Entrenamiento", i)
+pru_tr <- function(i) fila(int_pruebas, "Entrenamiento", i)
+pru_pre <- function(i) fila(int_pruebas, "Antes", i)
+
+anual_normal <- filter(anual, !anio %in% c(2020, 2021, 2023))
+
+# Estimación
+coef_de <- function(mod, term) filter(coeficientes, modelo == mod, termino == term)
+comp_de <- function(mod) filter(comparacion, modelo == mod)
+mod_aicc <- seleccion$modelo[grepl("AICc", seleccion$criterio)]
+mod_bic  <- seleccion$modelo[grepl("BIC", seleccion$criterio)]
+sin_ar   <- comparacion$modelo[grepl("^SARIMA\\(0,1,0\\)", comparacion$modelo)]
+ma_est   <- comparacion$modelo[grepl("\\(0,0,1\\)12$", comparacion$modelo)]
+```
+
+## Muestra y Fecha de Corte
+
+La serie va de `r mes_anio(particion$entrenamiento_desde)`, primer mes de la base de cartera por
+producto, a `r mes_anio(FECHA_CORTE)`, fecha de corte del trabajo. El entrenamiento va hasta
+`r mes_anio(particion$entrenamiento_hasta)` (`r particion$meses_entrenamiento` meses) y la evaluación
+de `r mes_anio(particion$evaluacion_desde)` a `r mes_anio(particion$evaluacion_hasta)`
+(`r particion$meses_evaluacion` meses).
+
+El corte no se eligió a mano: sale de la validación. Con `r N_ORIGENES` orígenes y pronósticos a
+`r HORIZONTE` meses, la evaluación necesita `r particion$meses_necesarios` meses al final de la serie,
+y dejamos uno de holgura. El primer origen es `r mes_anio(particion$primer_origen)`, el último
+`r mes_anio(particion$ultimo_origen)`, y el último mes pronosticado `r mes_anio(particion$ultimo_pronostico)`.
+Los tres valores que se fijan a mano (fecha de corte, horizonte y número de orígenes) están en
+`R/parametros.R`; si cambian, la partición se recalcula sola.
+
+El entrenamiento cubre nueve ciclos estacionales completos, el periodo de los alivios, necesario
+para estimar la intervención, y el ciclo de alzas de la tasa de 2022 y 2023. Todas las decisiones
+que dependen de los datos se toman solo con el entrenamiento; la evaluación se usa una vez, en la
+validación.
+
+```{r}
+#| label: fig-particion
+#| fig-cap: "Partición de la muestra en entrenamiento y evaluación."
+
+knitr::include_graphics("figuras/modelo/particion.png")
+```
+
+El entrenamiento termina cerca del punto más alto de la mora y la evaluación cubre el descenso de
+2024 a 2026. Es un tramo exigente, porque los modelos tienen que anticipar el cambio de dirección.
+
+## Transformación
+
+Los modelos ARIMA suponen que la variabilidad de la serie no cambia con su nivel. Para revisarlo
+calculamos el λ de Box-Cox por el método de Guerrero y miramos la relación entre la media y la
+variabilidad de cada año.
+
+```{r}
+#| label: tabla-lambda
+
+lambdas |>
+  transmute(Muestra = muestra, `λ de Guerrero` = num(lambda)) |>
+  knitr::kable(align = "lr")
+```
+
+Los dos valores apuntan a lados opuestos. Con todo el entrenamiento, λ = `r num(lambdas$lambda[1])`,
+cerca de 1, lo que indica que no hace falta transformar; ese valor lo empuja 2020, un año con mora
+baja y la mayor variabilidad. Antes de los alivios, λ = `r num(lambdas$lambda[2])`, que es el límite
+inferior del rango en que busca el método: no es una estimación confiable, y además se basa en solo
+cinco años.
+
+La desviación anual del nivel mezcla la variabilidad con la tendencia del año. Por eso la medimos
+también con la desviación del cambio mensual, que no se infla cuando la serie sube o baja de forma
+sostenida.
+
+```{r}
+#| label: fig-media-desviacion
+#| fig-cap: "Media anual de la mora frente a la desviación estándar del cambio mensual, entrenamiento."
+
+knitr::include_graphics("figuras/modelo/media_desviacion.png")
+```
+
+Salvo 2020, por los alivios, y 2023, año de subida sostenida, la variabilidad se mantiene entre
+`r num(min(anual_normal$desviacion_cambio))` y `r num(max(anual_normal$desviacion_cambio))` puntos,
+con medias que van de `r num(min(anual_normal$media), 1)` % a `r num(max(anual_normal$media), 1)` %.
+Sin esos dos años y 2021, la correlación entre la media y la variabilidad baja a
+`r num(corr_trans$correlacion_desviacion_cambio[3])`, con apenas seis puntos.
+
+Entonces según los resultados, trabajamos con la serie en su escala original (λ = 1). La evidencia de que la
+variabilidad crezca con el nivel depende de un solo año, y en esta escala los coeficientes, los
+pronósticos y los errores se leen directamente en puntos porcentuales. En el diagnóstico de residuos
+volvemos a revisar si la varianza cambia con el nivel.
+
+## Orden de Integración
+
+Hay cuatro opciones: no diferenciar, aplicar la diferencia regular (∇), la estacional (∇12) o las
+dos. Las comparamos con la varianza y la autocorrelación, y después con pruebas formales.
+
+```{r}
+#| label: tabla-varianzas
+
+int_resumen |>
+  filter(startsWith(muestra, "Entrenamiento")) |>
+  transmute(`Diferenciación` = diferencia, n, Varianza = num(varianza, 3),
+            `ACF rezago 1` = num(acf_1), `ACF rezago 12` = num(acf_12)) |>
+  knitr::kable(align = "lrrrr", caption = "Diferenciaciones candidatas, entrenamiento.")
+```
+
+La diferencia regular da la menor varianza (`r num(res_tr(2)$varianza, 3)`). La estacional sola la
+sube por encima de la de la serie sin diferenciar (`r num(res_tr(3)$varianza, 2)` frente a
+`r num(res_tr(1)$varianza, 2)`) y deja la ACF en el rezago 1 en `r num(res_tr(3)$acf_1)`: la serie
+sigue sin ser estacionaria. Agregar la estacional a la regular casi duplica la varianza y deja una
+autocorrelación de `r num(res_tr(4)$acf_12)` en el rezago 12, la señal de diferenciar de más.
+
+```{r}
+#| label: fig-diferencias
+#| fig-cap: "Las cuatro diferenciaciones candidatas, entrenamiento."
+
+knitr::include_graphics("figuras/modelo/diferencias.png")
+```
+
+En la gráfica, la serie con diferencia estacional deambula sin volver a un nivel, mientras que la
+regular oscila alrededor de cero, salvo el salto de la pandemia. Con las dos diferencias la pandemia
+aparece dos veces: en 2020 y, como un espejo, en 2021, porque la diferencia estacional arrastra el
+choque doce meses.
+
+```{r}
+#| label: tabla-pruebas
+
+int_pruebas |>
+  transmute(Muestra = if_else(startsWith(muestra, "Entrenamiento"), "Entrenamiento", "Antes de los alivios"),
+            `Diferenciación` = diferencia,
+            KPSS = num(kpss_estad, 3), `KPSS rechaza` = si_no(kpss_rechaza),
+            ADF = num(adf_estad), `ADF rechaza` = si_no(adf_rechaza)) |>
+  knitr::kable(align = "llrrrr",
+               caption = paste0("KPSS (H0: estacionaria, crítico al 5 %: ", num(int_pruebas$kpss_critico_5[1], 3),
+                                ") y ADF con constante (H0: raíz unitaria, crítico al 5 %: cerca de ",
+                                num(int_pruebas$adf_critico_5[1]), ")."))
+```
+
+Con el entrenamiento, la prueba ADF no rechaza la raíz unitaria en la serie
+(`r num(pru_tr(1)$adf_estad)`) ni con la diferencia estacional sola (`r num(pru_tr(3)$adf_estad)`),
+y la rechaza con la regular (`r num(pru_tr(2)$adf_estad)`). La KPSS no rechaza en ningún caso, ni
+siquiera en la serie sin diferenciar (`r num(pru_tr(1)$kpss_estad, 3)` frente a un crítico de
+`r num(pru_tr(1)$kpss_critico_5, 3)`); es una prueba con poca potencia cuando hay un quiebre como el de
+2020, y su resultado depende del número de rezagos que use. Antes de los alivios, la KPSS sí rechaza
+en la serie y con la diferencia estacional sola. Algunos resultados de la ADF en esa submuestra son
+raros, como no rechazar con la diferencia regular; con 61 meses y hasta 12 rezagos la prueba pierde
+potencia, y no les damos peso.
+
+```{r}
+#| label: tabla-sugeridas
+
+int_sug |>
+  mutate(muestra = if_else(startsWith(muestra, "Entrenamiento"), "Entrenamiento", "Antes de los alivios")) |>
+  tidyr::pivot_wider(names_from = muestra, values_from = diferencias) |>
+  rename(Prueba = prueba, `Sobre` = sobre) |>
+  knitr::kable(align = "llrr", caption = "Número de diferencias que sugieren las pruebas automáticas.")
+```
+
+Las pruebas automáticas apuntan en la misma dirección. Con el entrenamiento, `ndiffs` sugiere una
+diferencia regular y ninguna prueba sugiere la estacional. La prueba por fuerza estacional sugiere
+la estacional antes de los alivios, porque allí el patrón anual es muy marcado; pero las pruebas
+OCSB y Canova-Hansen, que son las que preguntan si la estacionalidad cambia de un año a otro, no
+encuentran raíz unitaria estacional en ninguna de las dos muestras. La estacionalidad es fuerte,
+pero estable.
+
+Por lo anterior, usamos la diferencia regular y no la estacional (d = 1, D = 0). La estacionalidad se
+recoge con términos estacionales dentro del modelo, que quedan de la forma
+SARIMA(p,1,q)(P,0,Q)~12~.
+
+## Identificación
+
+Con la diferenciación definida, la ACF y la PACF de la serie con diferencia regular muestran qué
+dependencia queda por modelar. Las miramos con todo el entrenamiento y con los datos de antes de los
+alivios, porque los meses de 2020 y 2021 distorsionan las dos funciones.
+
+```{r}
+#| label: fig-acf-pre
+#| fig-cap: "ACF y PACF de la serie con diferencia regular, antes de los alivios."
+
+knitr::include_graphics("figuras/modelo/acf_regular_pre_alivios.png")
+```
+
+Antes de los alivios no hay estructura en los primeros rezagos: todos quedan dentro de la banda y la
+ACF en el rezago 1 es `r num(acf_en(acf_pre, 1))`. En los rezagos estacionales la ACF decae
+(`r num(acf_en(acf_pre, 12))`, `r num(acf_en(acf_pre, 24))` y `r num(acf_en(acf_pre, 36))` en 12, 24
+y 36) y la PACF tiene un solo pico, en el 12 (`r num(acf_en(acf_pre, 12, "PACF"))`). Es el patrón
+de un AR estacional de orden 1. Un MA estacional mostraría lo contrario: un solo pico en la ACF y una
+PACF que decae.
+
+```{r}
+#| label: fig-acf-entrenamiento
+#| fig-cap: "ACF y PACF de la serie con diferencia regular, entrenamiento."
+
+knitr::include_graphics("figuras/modelo/acf_regular_entrenamiento.png")
+```
+
+Con todo el entrenamiento aparece una estructura regular que antes no estaba: la ACF decae desde
+`r num(acf_en(acf_tr, 1))` (`r num(acf_en(acf_tr, 2))` en el rezago 2) y la PACF se corta después
+del rezago 1, el patrón de un AR(1). Puede ser en parte dinámica real, como la subida sostenida de
+2022 y 2023, y en parte el salto de 2020 sin modelar. La estructura estacional queda tapada por la
+pandemia y solo se asoma en el pico de la PACF en el rezago 13 (`r num(acf_en(acf_tr, 13, "PACF"))`),
+que aparece cuando hay a la vez un AR(1) y un término estacional. El pico del rezago 4 en la PACF
+está en el borde de la banda y, entre 36 rezagos, es esperable que alguno lo toque por azar.
+
+Como referencia, la búsqueda automática con d = 1 y D = 0 propone
+`r automatica$modelo[startsWith(automatica$muestra, "Antes")]` antes de los alivios, que coincide
+con lo que se ve en las gráficas, y `r automatica$modelo[startsWith(automatica$muestra, "Entrenamiento")]`
+con todo el entrenamiento, un modelo con cinco parámetros que probablemente está absorbiendo el
+salto de 2020.
+
+```{r}
+#| label: tabla-candidatos
+
+candidatos |>
+  transmute(Modelo = modelo, `Razón` = razon) |>
+  knitr::kable(caption = "Modelos candidatos para la estimación.")
+```
+
+Los dos primeros combinan el AR(1) del entrenamiento con un término estacional, AR o MA; el AR
+estacional es el que respalda la ACF de antes de los alivios, y el MA queda como alternativa. Los
+otros dos vienen de la búsqueda automática; el que no tiene AR(1) permite ver si ese término sigue
+haciendo falta cuando la pandemia se modele.
+
+```{r}
+#| label: tabla-descartados
+
+descartados |>
+  transmute(Modelo = modelo, `Razón` = razon) |>
+  knitr::kable(caption = "Modelos considerados y descartados en la identificación.")
+```
+
+## Estimación y Selección
+
+Estimamos los cuatro candidatos por máxima verosimilitud con el entrenamiento. Todavía no incluyen
+ninguna variable para los alivios: la necesidad de hacerlo la debe mostrar el diagnóstico de
+residuos. Como todos tienen la misma diferenciación y la misma muestra efectiva
+(`r comparacion$n[1]` meses), sus criterios de información se pueden comparar.
+
+```{r}
+#| label: tabla-coeficientes
+
+coeficientes |>
+  transmute(Modelo = modelo, `Término` = termino, `Estimación` = num(estimacion, 3),
+            `Error estándar` = num(error_estandar, 3), z = num(z), `Valor p` = num(valor_p, 3)) |>
+  knitr::kable(align = "llrrrr", caption = "Coeficientes estimados con su incertidumbre.")
+```
+
+```{r}
+#| label: tabla-comparacion
+
+comparacion |>
+  transmute(Modelo = modelo, `Parámetros` = parametros, AICc = num(aicc), `ΔAICc` = num(delta_aicc),
+            BIC = num(bic), `σ²` = num(sigma2, 4),
+            `Todos significativos` = si_no(todos_significativos),
+            `Estacionario e invertible` = si_no(estacionario & invertible)) |>
+  knitr::kable(align = "lrrrrrcc", caption = "Comparación de los candidatos, de menor a mayor AICc.")
+```
+
+Todos los modelos son estacionarios e invertibles: las raíces de sus polinomios autorregresivos y de
+medias móviles quedan fuera del círculo unitario.
+
+El menor AICc lo tiene el `r mod_aicc`, con `r comp_de(mod_aicc)$parametros` parámetros. Pero su
+segundo término autorregresivo estacional no es significativo (z = `r num(coef_de(mod_aicc, "sar2")$z)`),
+y sus tres medias móviles (`r num(coef_de(mod_aicc, "ma1")$estimacion)`,
+`r num(coef_de(mod_aicc, "ma2")$estimacion)` y `r num(coef_de(mod_aicc, "ma3")$estimacion)`) se
+parecen a los pesos que tendría un AR(1) escrito como medias móviles, solo que más grandes. Es
+probable que esos parámetros de más estén absorbiendo la caída y el rebote de 2020.
+
+El menor BIC, que castiga más los parámetros, lo tiene el `r mod_bic`. Sus dos coeficientes son muy
+significativos (φ = `r num(coef_de(mod_bic, "ar1")$estimacion)` con z = `r num(coef_de(mod_bic, "ar1")$z, 1)`
+y Φ = `r num(coef_de(mod_bic, "sar1")$estimacion)` con z = `r num(coef_de(mod_bic, "sar1")$z, 1)`), y
+queda a `r num(comp_de(mod_bic)$delta_aicc, 1)` puntos de AICc del primero. Es el modelo que
+sugería la identificación.
+
+Las otras dos comparaciones confirman lo que se vio en la ACF y la PACF. El AR estacional se ajusta
+mejor que el MA estacional (el `r ma_est` queda a `r num(comp_de(ma_est)$delta_aicc, 1)` puntos), y
+quitar el AR(1) regular empeora el AICc en `r num(comp_de(sin_ar)$delta_aicc, 1)` puntos, así que
+ese término hace falta.
+
+Los dos criterios no eligen el mismo modelo, y la diferencia en AICc es moderada. Por eso no
+cambiamos la regla para quedarnos con uno: los dos pasan al diagnóstico, y la selección se repite
+cuando se incorpore la intervención. Si el modelo de cinco parámetros solo ganaba por absorber la
+pandemia, ahí va a perder su ventaja.

@@ -1,7 +1,3 @@
-# Paso 4 de la solución: identificación
-# Correr después de 04_integracion.R. Solo usa la muestra de entrenamiento.
-# Diferenciación definida en el paso 3: d = 1, D = 0.
-
 library(dplyr)
 library(ggplot2)
 
@@ -11,7 +7,7 @@ serie <- readr::read_csv("datos/procesados/serie_partida.csv", show_col_types = 
 train <- filter(serie, muestra == "entrenamiento")
 pre   <- filter(train, fecha < as.Date("2020-03-01"))   # antes de los alivios
 
-# 1. ACF y PACF de la serie con diferencia regular
+# ACF y PACF de la serie con diferencia regular
 acf_train <- tabla_acf_pacf(diferenciar(train$mora_pct, "regular"))
 acf_pre   <- tabla_acf_pacf(diferenciar(pre$mora_pct, "regular"))
 print(acf_train, n = Inf)
@@ -27,18 +23,14 @@ print(g_pre)
 ggsave("figuras/modelo/acf_regular_entrenamiento.png", g_train, width = 9, height = 4, dpi = 160, bg = "white")
 ggsave("figuras/modelo/acf_regular_pre_alivios.png", g_pre, width = 9, height = 4, dpi = 160, bg = "white")
 
-# 2. Búsqueda automática como referencia (d = 1 y D = 0 fijos, sin regresoras)
+# Búsqueda automática como referencia (d = 1 y D = 0 fijos, sin regresoras)
 automatica <- bind_rows(
   mutate(busqueda_automatica(train$mora_pct), muestra = "Entrenamiento (2015 a 2023)", .before = 1),
   mutate(busqueda_automatica(pre$mora_pct),   muestra = "Antes de los alivios (2015 a feb-2020)", .before = 1)
 )
 print(automatica, width = Inf)
 
-# 3. Candidatos para el paso 5
-# Antes de los alivios: sin estructura regular (rezagos 1 a 6 dentro de la banda) y AR estacional
-# (ACF 0,52, 0,34 y 0,19 en 12, 24 y 36; PACF con un solo pico en 12).
-# Entrenamiento completo: AR(1) regular (ACF que decae desde 0,48 y PACF que se corta en 1) y
-# estructura estacional tapada por la pandemia (PACF de -0,32 en el rezago 13).
+# Candidatos
 candidatos <- tribble(
   ~p, ~q, ~P, ~Q, ~razon,
   1, 0, 1, 0, "AR(1) por la ACF y la PACF del entrenamiento; AR estacional por el patrón de antes de los alivios",

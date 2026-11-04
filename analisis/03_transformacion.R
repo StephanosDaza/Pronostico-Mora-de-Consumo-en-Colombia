@@ -1,6 +1,3 @@
-# Paso 2 de la solución: transformación
-# Correr después de 02_particion.R. Solo usa la muestra de entrenamiento.
-
 library(dplyr)
 library(ggplot2)
 
@@ -19,8 +16,6 @@ lambdas <- tibble(
 print(lambdas)
 
 # Relación entre nivel y variabilidad por año
-# Si la variabilidad crece con la media, la transformación ayuda; si no hay relación, no hace falta.
-# Se mide con la desviación del nivel y con la del cambio mensual, que no se infla por la tendencia.
 anual <- media_desviacion_anual(train)
 print(anual, n = Inf)
 
@@ -53,7 +48,7 @@ g_media_desv <- ggplot(anual, aes(media, desviacion_cambio)) +
 print(g_media_desv)
 ggsave("figuras/modelo/media_desviacion.png", g_media_desv, width = 7.5, height = 5, dpi = 160, bg = "white")
 
-# Serie original frente a la transformada con el lambda del entrenamiento
+# Serie original Vs. la transformada con el lambda del entrenamiento
 lambda_train <- lambdas$lambda[1]
 g_comparacion <- train |>
   mutate(`Original (%)` = mora_pct,

@@ -1,6 +1,3 @@
-# Paso 3 de la solución: orden de integración
-# Correr después de 03_transformacion.R. Solo usa la muestra de entrenamiento, en escala original.
-
 library(dplyr)
 library(ggplot2)
 
@@ -13,15 +10,15 @@ pre   <- filter(train, fecha < as.Date("2020-03-01"))   # antes de los alivios
 muestras <- list("Entrenamiento (2015 a 2023)" = train$mora_pct,
                  "Antes de los alivios (2015 a feb-2020)" = pre$mora_pct)
 
-# 1. Varianza y autocorrelación de cada diferenciación
+# Varianza y autocorrelación de cada diferenciación
 resumen <- purrr::imap_dfr(muestras, ~ mutate(resumen_diferencias(.x), muestra = .y, .before = 1))
 print(resumen, n = Inf, width = Inf)
 
-# 2. KPSS y ADF sobre cada diferenciación
+# KPSS y ADF sobre cada diferenciación
 pruebas <- purrr::imap_dfr(muestras, ~ mutate(pruebas_integracion(.x), muestra = .y, .before = 1))
 print(pruebas, n = Inf, width = Inf)
 
-# 3. Diferencias sugeridas por las pruebas automáticas
+# Diferencias sugeridas por las pruebas automáticas
 sugeridas <- purrr::imap_dfr(muestras, ~ mutate(diferencias_sugeridas(.x), muestra = .y, .before = 1))
 print(sugeridas, n = Inf, width = Inf)
 

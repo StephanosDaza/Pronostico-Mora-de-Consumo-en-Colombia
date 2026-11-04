@@ -1,6 +1,3 @@
-# Serie de mora, tasa, validación y características
-# Correr desde la raíz del proyecto
-
 library(dplyr)
 
 for (f in list.files("R", pattern = "\\.R$", full.names = TRUE)) source(f, encoding = "UTF-8")

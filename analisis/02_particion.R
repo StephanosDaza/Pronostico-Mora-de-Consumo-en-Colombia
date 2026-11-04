@@ -1,7 +1,3 @@
-# Paso 1 de la solución: muestra y fecha de corte
-# Correr después de 01_construir_serie.R
-# Los parámetros (fecha de corte, horizonte y orígenes) están en R/parametros.R
-
 library(dplyr)
 library(ggplot2)
 

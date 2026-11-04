@@ -1,0 +1,348 @@
+
+---
+title: "Pronóstico de la mora en la cartera de consumo en Colombia"
+subtitle: "Hito 3: Revisión de literatura"
+
+author:
+  - "Esteban Daza Palomino"
+  - "Juan David Garro Arboleda"
+  - "Sara Jurado Giraldo"
+
+lang: es
+
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    include-in-header:
+      text: |
+        <style>
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9rem;
+        }
+        table th, table td {
+          border: 1px solid #555;
+          padding: 8px;
+          text-align: left;
+          vertical-align: top;
+        }
+        table th {
+          background-color: #eeeeee;
+          font-weight: bold;
+        }
+        </style>
+
+  pdf:
+    documentclass: article
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    fontsize: 11pt
+    geometry:
+      - a4paper
+      - margin=2.5cm
+    include-in-header:
+      text: |
+        \usepackage{pdflscape}
+        \usepackage{longtable}
+        \usepackage{tabularx}
+        \usepackage{array}
+        \setlength{\LTleft}{0pt}
+        \setlength{\LTright}{0pt}
+
+bibliography: referencias.bib
+citeproc: true
+---
+
+# Estrategia de búsqueda y selección
+
+## Objetivo de la revisión
+
+Esta revisión reúne investigaciones sobre la morosidad crediticia, especialmente en la cartera de consumo colombiana. El propósito es conocer los modelos utilizados, sus resultados y las formas de evaluar su precisión, para identificar los antecedentes de nuestro proyecto.
+
+Nos interesa principalmente la predicción mensual de la mora a tres y seis meses, aunque también consideramos estudios sobre su relación con variables económicas y acontecimientos extraordinarios.
+
+## Fuentes consultadas
+
+La búsqueda partió de las referencias del Hito 2 y se amplió mediante:
+
+- Repositorios del Banco de la República y universidades.
+- Revistas científicas y sus registros editoriales.
+- IDEAS/RePEc y referencias de investigaciones relacionadas.
+
+Se utilizaron términos como *non-performing loans forecasting*, *credit delinquency*, *SARIMA*, *out-of-sample forecasting* y pronóstico de cartera vencida en Colombia.
+
+## Criterios de selección
+
+Se consideraron cuatro criterios principales:
+
+1. **Pertinencia:** relación con la mora crediticia, preferiblemente de consumo.
+2. **Metodología:** descripción de los modelos empleados.
+3. **Resultados:** disponibilidad de hallazgos verificables.
+4. **Utilidad:** relación con el pronóstico o la dinámica de nuestra serie.
+
+Se excluyeron investigaciones sin relación suficiente con el problema planteado. La selección final comprende nueve fuentes, entre publicaciones académicas y documentos institucionales.
+
+En los artículos cuyo texto completo no estuvo disponible, se utilizó únicamente la información publicada en sus resúmenes editoriales.
+
+# Revisión de la literatura
+
+Los estudios se organizaron en tres grupos: investigaciones orientadas al pronóstico, trabajos sobre la dinámica de la mora colombiana y análisis de escenarios de riesgo crediticio.
+
+## Modelos de pronóstico
+
+### Kufo, Gjeci y Tori (2024)
+
+**Kufo, Gjeci y Tori (2024)** [@tori2024] estudian la mora mensual del sistema bancario albanés mediante modelos SARIMA, caminata aleatoria y suavizamiento exponencial.
+
+El modelo seleccionado, SARIMA(0,1,1)(2,2,2)[12], obtuvo un RMSE de 0,2211 y un MAE de 0,1799 durante la estimación. Aunque superó a varios referentes sencillos, estos resultados no corresponden a una evaluación de errores fuera de muestra.
+
+El trabajo es útil para comparar métodos de pronóstico estacional, pero no permite establecer su superioridad predictiva para la mora de consumo colombiana.
+
+### Cortés y Soriano (2024)
+
+**Cortés y Soriano (2024)** [@cortes2024] analizan la mora de consumo e hipotecaria en ocho países, incluida Colombia. Comparan modelos de panel con un AR(1) mediante pronósticos fuera de muestra a cuatro, ocho y veinte trimestres.
+
+Para la cartera de consumo colombiana, el método 3SLS obtuvo valores de MSFE relativo de 1,2, 6,3 y 1,3, respectivamente. Estos valores indican menor error que el AR(1), aunque la mejora no se presentó en todos los métodos.
+
+El estudio demuestra la importancia de evaluar los modelos frente a referentes y distinguir los resultados según el horizonte de predicción.
+
+### Abdullah y colaboradores (2023)
+
+**Abdullah y colaboradores (2023)** [@abdullah2023] comparan catorce métodos de predicción utilizando datos trimestrales de 322 bancos de quince países emergentes.
+
+Según el resumen editorial, *random forest* alcanzó la mayor exactitud, con un 76,10 %. Sin embargo, la unidad de análisis y la métrica utilizada no son directamente comparables con nuestra serie mensual ni con medidas como RMSE o MASE.
+
+Debido al acceso restringido, no fue posible verificar todos los detalles de su procedimiento de evaluación.
+
+### Hincapié Clavijo y Ramírez Cañaveral (2026)
+
+**Hincapié Clavijo y Ramírez Cañaveral (2026)** [@hincapie2026] pronostican el índice de cartera vencida de consumo colombiano mediante modelos VAR, VARX y VECM, utilizando información mensual entre 2017 y 2026.
+
+Evalúan doce pronósticos sucesivos de un paso adelante. El VECM obtuvo un RMSE de 0,0013 y un MAE de 0,0012 en niveles. El VARX registró un RMSE de 0,002180 y un MAE de 0,001921 en primeras diferencias. Estas métricas no son directamente comparables por utilizar transformaciones distintas.
+
+Es uno de los antecedentes más cercanos a nuestro proyecto. La principal diferencia es que proponemos evaluar de forma específica los horizontes de tres y seis meses.
+
+## Dinámica de la mora colombiana
+
+### Gamba-Santamaría, Melo-Velandia y Orozco-Vanegas (2021)
+
+**Gamba-Santamaría, Melo-Velandia y Orozco-Vanegas (2021)** [@gamba2021] estudian cosechas de créditos de consumo colombianos originados entre 2005 y 2019.
+
+Los autores distinguen los efectos relacionados con la capacidad de pago de los deudores y el riesgo asumido al otorgar préstamos. Encuentran que unas condiciones económicas favorables pueden mejorar la capacidad de pago y, al mismo tiempo, acompañarse de una mayor toma de riesgo.
+
+El estudio permite comprender mejor la evolución de la mora, aunque no presenta una comparación de errores predictivos equivalente a la nuestra.
+
+### Quimbay y Alvarez (2025)
+
+**Quimbay y Alvarez (2025)** [@quimbay2025] investigan la relación entre los ciclos económicos y los indicadores de cartera y mora colombianos durante 2006–2022.
+
+Utilizan correlaciones con rezagos y modelos VAR. Según el resumen editorial, los resultados de ambos procedimientos son consistentes y muestran relaciones temporales entre las variables.
+
+Este antecedente respalda el análisis de relaciones rezagadas, pero no fue posible verificar métricas de pronóstico fuera de muestra.
+
+## Modelos macroeconómicos y escenarios de riesgo
+
+### Gutiérrez-Rueda y Vásquez-Escobar (2008)
+
+**Gutiérrez-Rueda y Vásquez-Escobar (2008)** [@gutierrez2008] estudian los indicadores de mora colombianos mediante modelos de corrección de errores y pruebas de estrés.
+
+Para la cartera de consumo presentan un índice inicial de 6,68 %. Bajo un escenario de contracción económica, alcanzaría 10,65 %; ante un aumento del desempleo, 8,63 %; y con choques simultáneos, 12,41 %.
+
+Los resultados muestran sensibilidad a las condiciones macroeconómicas, pero corresponden a escenarios simulados y no a errores de pronóstico.
+
+### Cabrera-Rodríguez, Gutiérrez-Rueda y Mendoza-Gutiérrez (2012)
+
+**Cabrera-Rodríguez, Gutiérrez-Rueda y Mendoza-Gutiérrez (2012)** [@cabrera2012] desarrollan pruebas de resistencia del sistema bancario colombiano mediante proyecciones macroeconómicas a ocho trimestres.
+
+Encuentran que la mayoría de los bancos analizados podría resistir un deterioro considerable de la actividad económica bajo el escenario evaluado.
+
+Su aporte está en la aplicación de proyecciones de mora al análisis de riesgos, aunque no evalúa su precisión frente a modelos estadísticos de referencia.
+
+### Benavides-Franco y colaboradores (2023)
+
+**Benavides-Franco y colaboradores (2023)** [@benavides2023] analizan los efectos de la pandemia sobre el crédito y la mora en Colombia mediante modelos VARX y funciones de impulso-respuesta.
+
+Identifican efectos persistentes y diferencias entre modalidades crediticias. El estudio muestra la importancia de considerar perturbaciones extraordinarias al analizar estas series.
+
+Sin embargo, sus resultados corresponden a simulaciones y no a una comparación de errores de pronóstico a tres y seis meses.
+
+# Comparación de los estudios
+
+
+## Tabla comparativa
+
+La siguiente tabla resume las nueve investigaciones revisadas. Se presentan los datos, los métodos, los horizontes, las métricas y los resultados principales.
+
+::: {.content-visible when-format="html"}
+
+| Fuente | Datos | Método | Horizonte | Métrica | Resultado |
+|---|---|---|---|---|---|
+| @tori2024 | Albania; mensual | SARIMA y referentes | 12 meses proyectados | RMSE y MAE | RMSE: 0,2211 |
+| @cortes2024 | 8 países; trimestral | Panel frente a AR(1) | 4, 8 y 20 trimestres | MSFE relativo | Colombia: 1,2; 6,3; 1,3 |
+| @abdullah2023 | 322 bancos; 15 países | 14 modelos | No verificado | Exactitud | RF: 76,10 % |
+| @hincapie2026 | Colombia; mensual | VAR, VARX, VECM | 1 paso; 12 evaluaciones | RMSE y MAE | RMSE: 0,0013 |
+| @gamba2021 | Colombia; consumo | Descomposición y VAR | Análisis dinámico | No comparable | Capacidad de pago y riesgo |
+| @quimbay2025 | Colombia; 2006–2022 | Correlaciones y VAR | No verificado | No verificado | Relación con ciclos |
+| @gutierrez2008 | Colombia; mensual | VEC y estrés | Escenarios | Cambio del ICV | 6,68 % a 12,41 % |
+| @cabrera2012 | Colombia; banca | Modelos de estrés | 8 trimestres | No comparable | Resistencia ante choque |
+| @benavides2023 | Colombia; crédito | VARX | Choques simulados | No comparable | Efectos persistentes |
+
+:::
+
+```{=latex}
+\clearpage
+\begin{landscape}
+\begin{table}[p]
+\centering
+\caption{Comparación de los nueve estudios revisados}
+\label{tab:literatura}
+\small
+\renewcommand{\arraystretch}{1.8}
+\setlength{\tabcolsep}{5pt}
+\setlength{\arrayrulewidth}{0.5pt}
+
+\begin{tabularx}{\linewidth}{|p{2.8cm}|X|X|X|X|X|}
+\hline
+\textbf{Fuente} &
+\textbf{Datos} &
+\textbf{Método} &
+\textbf{Horizonte} &
+\textbf{Métrica} &
+\textbf{Resultado principal}\\
+\hline
+
+Kufo et al. (2024) &
+Albania; mora mensual &
+SARIMA y referentes &
+12 meses proyectados &
+RMSE y MAE en estimación &
+RMSE: 0,2211\\
+\hline
+
+Cortés y Soriano (2024) &
+Ocho países; mora trimestral &
+Panel frente a AR(1) &
+4, 8 y 20 trimestres &
+MSFE relativo &
+Colombia, 3SLS: 1,2; 6,3; 1,3\\
+\hline
+
+Abdullah et al. (2023) &
+322 bancos; 15 países &
+14 métodos &
+No verificado &
+Exactitud &
+Random forest: 76,10\%\\
+\hline
+
+Hincapié y Ramírez (2026) &
+Colombia; ICV mensual &
+VAR, VARX y VECM &
+12 pronósticos a un paso &
+RMSE y MAE &
+VECM: RMSE 0,0013\\
+\hline
+
+Gamba-Santamaría et al. (2021) &
+Colombia; consumo &
+Descomposición y VAR &
+Análisis dinámico &
+Sin error comparable &
+Capacidad de pago y riesgo\\
+\hline
+
+Quimbay y Alvarez (2025) &
+Colombia; 2006--2022 &
+Correlaciones y VAR &
+No verificado &
+No verificado &
+Relaciones con el ciclo económico\\
+\hline
+
+Gutiérrez-Rueda y Vásquez-Escobar (2008) &
+Colombia; mora mensual &
+VEC y estrés &
+Escenarios &
+Cambio del ICV &
+Consumo: 6,68\% a 12,41\%\\
+\hline
+
+Cabrera-Rodríguez et al. (2012) &
+Colombia; cartera bancaria &
+Modelos de estrés &
+8 trimestres &
+Sin error comparable &
+Resistencia ante choque adverso\\
+\hline
+
+Benavides-Franco et al. (2023) &
+Colombia; crédito y mora &
+VARX &
+Simulación de choques &
+Sin error comparable &
+Efectos persistentes\\
+\hline
+
+\end{tabularx}
+\end{table}
+\end{landscape}
+\clearpage
+```
+
+
+## Interpretación de la comparación
+
+Los estudios de Kufo, Cortés, Abdullah e Hincapié presentan resultados relacionados con la predicción, aunque emplean diferentes variables, métricas y procedimientos de evaluación.
+
+Las demás investigaciones aportan evidencia sobre los factores asociados con la mora y su comportamiento ante cambios económicos. Esta distinción es importante porque nuestro objetivo es evaluar la precisión de los pronósticos, no únicamente explicar la evolución del indicador.
+
+# Síntesis de la evidencia
+
+## Hallazgos principales
+
+La revisión permite identificar tres aspectos:
+
+1. **La selección del modelo no garantiza buenos pronósticos.** Un ajuste favorable durante la estimación no demuestra un desempeño superior fuera de muestra.
+
+2. **La precisión depende del horizonte.** Los resultados obtenidos a un paso no pueden generalizarse directamente a tres o seis meses.
+
+3. **La mora tiene relaciones con las condiciones económicas.** Los estudios nacionales muestran efectos asociados con variables macroeconómicas y acontecimientos extraordinarios.
+
+## Relación con el proyecto
+
+Los antecedentes respaldan el uso de modelos de series de tiempo para estudiar la mora y muestran la importancia de incorporar una evaluación fuera de muestra.
+
+También sugieren que las variables económicas y las intervenciones pueden ser relevantes, aunque su utilidad predictiva debe comprobarse con los datos y el procedimiento de evaluación del proyecto.
+
+# Brecha de investigación
+
+## Qué se conoce
+
+La literatura muestra que la mora crediticia tiene dependencia temporal y se relaciona con variables como las tasas de interés, el desempleo y la actividad económica.
+
+Existen investigaciones que utilizan SARIMA, modelos multivariados y aprendizaje automático para estudiar o pronosticar su evolución.
+
+## Qué falta por evaluar
+
+Los antecedentes presentan diferencias en las series, frecuencias, horizontes y métricas. Algunos reportan errores durante la estimación, otros evalúan un solo paso y otros se concentran en escenarios de riesgo.
+
+En los trabajos revisados no encontramos una comparación directamente equivalente entre un SARIMA con intervención y tasa de interés rezagada, un referente ingenuo estacional y un método de suavizamiento exponencial para pronosticar la mora mensual de consumo colombiana a tres y seis meses.
+
+## Contribución del proyecto
+
+Nuestra investigación propone realizar esa comparación mediante una evaluación fuera de muestra, considerando por separado ambos horizontes.
+
+Buscamos determinar si el SARIMA propuesto reduce el error frente a los referentes, sin asumir que un modelo más complejo necesariamente tendrá mejor desempeño.
+
+# Declaración de uso de inteligencia artificial
+
+Se utilizaron herramientas de inteligencia artificial como apoyo para organizar la revisión de literatura, mejorar la claridad de la redacción, estructurar la tabla comparativa y revisar la sintaxis del documento Quarto.
+
+# Referencias {.unnumbered}
+
+::: {#refs}
+:::

@@ -1,8 +1,3 @@
-# Paso 5 de la solución: estimación y selección
-# Correr después de 05_identificacion.R. Solo usa la muestra de entrenamiento.
-# Los candidatos se estiman sin intervención; el diagnóstico del paso 6 dice si hace falta.
-# Todos tienen d = 1, D = 0 y la misma muestra, así que sus AICc son comparables.
-
 library(dplyr)
 
 for (f in list.files("R", pattern = "\\.R$", full.names = TRUE)) source(f, encoding = "UTF-8")
@@ -27,9 +22,8 @@ comparacion <- purrr::imap_dfr(ajustes, resumen_modelo) |>
   mutate(delta_aicc = aicc - min(aicc), .after = aicc)
 print(comparacion, width = Inf)
 
-# Selección provisional entre los modelos estacionarios e invertibles: el de menor AICc y el de
-# menor BIC. Si no coinciden, los dos pasan al diagnóstico y la selección se repite con la
-# intervención.
+# Selección provisional entre los modelos estacionarios e invertibles
+
 validos <- filter(comparacion, estacionario, invertible)
 seleccion <- bind_rows(
   mutate(slice_min(validos, aicc, n = 1), criterio = "Menor AICc"),

@@ -29,7 +29,7 @@ execute:
 #| label: preparacion
 #| include: false
 
-# Antes de renderizar hay que correr los scripts de analisis/ en orden (01 a 06),
+# Antes de renderizar hay que correr los scripts de analisis/ en orden (01 a 09),
 # que dejan los CSV en datos/procesados/ y las figuras en figuras/modelo/
 
 library(dplyr)
@@ -309,11 +309,281 @@ oficial, y ya conocemos sus rasgos principales: una estacionalidad clara, con di
 y mayo altos; un quiebre por los alivios de 2020 y 2021, con caída y rebote; y una relación con la
 tasa de interés que aparece con varios meses de rezago.
 
-La siguiente etapa es la construcción del modelo, que seguimos en el orden de la metodología de Box
-y Jenkins: muestra, transformación, orden de integración, identificación, estimación, selección,
+La siguiente etapa es la construcción del modelo. Antes dejamos definidas, en el marco teórico, las
+herramientas que vamos a usar, y después seguimos el orden de la metodología de Box y Jenkins: muestra, transformación, orden de integración, identificación, estimación, selección,
 diagnóstico y tratamiento de atípicos e intervenciones. Después, el modelo elegido se evalúa con
 origen móvil frente al pronóstico naive estacional y un modelo de suavizamiento exponencial, con
 MASE y RMSE por horizonte, cobertura de los intervalos y la prueba de Diebold-Mariano.
+
+# Marco Teórico
+
+En esta sección dejamos definidas, con la notación que usamos en el resto del documento, las
+herramientas que emplea la construcción del modelo, desde la muestra hasta el diagnóstico. Cada resultado va con sus
+supuestos y con la referencia donde se puede verificar. Las demostraciones no se incluyen.
+
+## Notación
+
+| Símbolo | Significado | Dónde se usa |
+|---|---|---|
+| $y_t$ | Índice de mora de consumo en el mes $t$, en porcentaje | Toda la solución |
+| $T$ | Último mes de entrenamiento (diciembre de 2023, $T = 108$) | Muestra |
+| $B$ | Operador de rezago, $B\,y_t = y_{t-1}$ | Modelos y diferencias |
+| $\nabla,\ \nabla_{12}$ | Diferencia regular $1 - B$ y diferencia estacional $1 - B^{12}$ | Orden de integración |
+| $a_t$ | Ruido blanco con media cero y varianza $\sigma^2$ | Modelos ARIMA |
+| $\gamma(h),\ \rho(h)$ | Autocovarianza y autocorrelación teóricas en el rezago $h$ | Identificación |
+| $r_h,\ \hat\phi_{hh}$ | ACF y PACF muestrales | Identificación y diagnóstico |
+| $p, d, q$ | Órdenes autorregresivo, de diferenciación y de media móvil regulares | SARIMA |
+| $P, D, Q$ | Los mismos órdenes en la parte estacional, de periodo $s = 12$ | SARIMA |
+| $\phi_i,\ \Phi_i,\ \theta_i,\ \Theta_i$ | Coeficientes AR, AR estacional, MA y MA estacional | SARIMA |
+| $\lambda$ | Parámetro de la transformación de Box-Cox | Transformación |
+| $\eta_t$ | Error de la regresión, que sigue un modelo ARIMA | Regresión con errores ARIMA |
+| $C_t,\ R_t$ | Rampas de caída y de rebote de los alivios | Intervención |
+| $\bar x_{t-L}$ | Promedio de la tasa de interés de los meses $t-L$, $t-L-1$ y $t-L-2$ | Tasa como regresora |
+| $D_{jt}$ | Variable ficticia del mes $j$ ($j = 2, \dots, 12$; enero es la referencia) | Estacionalidad |
+| $\beta,\ \gamma_j,\ \omega$ | Coeficientes de las regresoras, de las ficticias y de la intervención | Regresión con errores ARIMA |
+| $\ell,\ k,\ n$ | Log-verosimilitud, número de parámetros y número de observaciones efectivas | Selección |
+| $Q_m$ | Estadístico de Ljung-Box hasta el rezago $m$ | Diagnóstico |
+
+## Estacionariedad y Autocorrelación
+
+Un proceso $\{y_t\}$ es **débilmente estacionario** si su media $E(y_t) = \mu$ no depende de $t$ y
+su autocovarianza $\gamma(h) = \mathrm{Cov}(y_{t+h}, y_t)$ depende solo del rezago $h$. Su función
+de autocorrelación es $\rho(h) = \gamma(h)/\gamma(0)$ (Brockwell y Davis, 2016, sección 1.4). Un
+**ruido blanco** es un proceso con media cero, varianza constante $\sigma^2$ y $\rho(h) = 0$ para
+todo $h \neq 0$.
+
+Con una muestra $y_1, \dots, y_n$, la ACF muestral es
+
+$$
+r_h = \frac{\sum_{t=1}^{n-h} (y_t - \bar y)(y_{t+h} - \bar y)}{\sum_{t=1}^{n} (y_t - \bar y)^2},
+$$
+
+y la PACF muestral $\hat\phi_{hh}$ es el último coeficiente de la regresión de $y_t$ sobre
+$y_{t-1}, \dots, y_{t-h}$. Si la serie es ruido blanco, para $n$ grande cada $r_h$ es
+aproximadamente normal con media cero y varianza $1/n$, de modo que la banda $\pm 1{,}96/\sqrt{n}$
+contiene cerca del 95 % de las autocorrelaciones (Brockwell y Davis, 2016, sección 1.4). Es la
+banda que usamos en todas las gráficas de ACF y PACF.
+
+## Diferencias y Raíz Unitaria
+
+La diferencia regular $\nabla y_t = (1 - B)\,y_t = y_t - y_{t-1}$ quita una tendencia estocástica,
+y la diferencia estacional $\nabla_{12}\,y_t = (1 - B^{12})\,y_t = y_t - y_{t-12}$ quita un patrón
+anual que cambia de un año a otro. Como
+
+$$
+1 - B^{12} = (1 - B)(1 + B + B^2 + \dots + B^{11}),
+$$
+
+la diferencia estacional ya contiene a la regular, y aplicar las dos puede sobrar. Diferenciar una
+serie que no lo necesita deja una raíz unitaria en la parte de medias móviles: si $y_t$ ya es ruido
+blanco, $\nabla y_t = a_t - a_{t-1}$ tiene autocorrelación de $-0{,}5$ en el rezago 1, y lo mismo
+ocurre en el rezago 12 con una diferencia estacional de más (Hyndman y Athanasopoulos, 2021,
+sección 9.1).
+
+**Prueba de Dickey-Fuller aumentada (ADF).** Sobre la serie $z_t$ se estima
+
+$$
+\nabla z_t = \alpha + \pi\, z_{t-1} + \sum_{j=1}^{m} \delta_j\, \nabla z_{t-j} + \varepsilon_t ,
+$$
+
+donde los rezagos de $\nabla z_t$ absorben la autocorrelación de corto plazo. La hipótesis nula es
+$H_0: \pi = 0$ (hay raíz unitaria) frente a $H_1: \pi < 0$ (la serie es estacionaria). El
+estadístico $\hat\pi / \mathrm{ee}(\hat\pi)$ no sigue una $t$ de Student bajo $H_0$, sino la
+distribución de Dickey-Fuller, cuyos valores críticos están tabulados (Dickey y Fuller, 1979; Said
+y Dickey, 1984). El número de rezagos $m$ lo elegimos con el AIC, partiendo de 12.
+
+**Prueba KPSS.** Parte del modelo $z_t = \xi_t + \varepsilon_t$, con $\xi_t = \xi_{t-1} + u_t$,
+donde $\varepsilon_t$ es estacionario y $u_t$ tiene varianza $\sigma_u^2$. La hipótesis nula es
+$H_0: \sigma_u^2 = 0$ (la serie es estacionaria) y el estadístico es
+
+$$
+\mathrm{KPSS} = \frac{1}{n^2\, \hat\sigma^2} \sum_{t=1}^{n} S_t^2, \qquad S_t = \sum_{i=1}^{t} \hat\varepsilon_i ,
+$$
+
+con $\hat\varepsilon_i$ los desvíos respecto a la media y $\hat\sigma^2$ un estimador de la varianza
+de largo plazo. Se rechaza la estacionariedad cuando el estadístico supera su valor crítico
+(Kwiatkowski et al., 1992). Como ADF y KPSS parten de hipótesis nulas opuestas, usarlas juntas
+permite ver si coinciden.
+
+**Pruebas sobre la diferencia estacional.** La función `nsdiffs` del paquete `forecast` ofrece tres
+criterios. El primero mide la fuerza estacional, $F_S = \max\{0,\ 1 - \mathrm{Var}(R_t)/\mathrm{Var}(S_t + R_t)\}$,
+con $S_t$ y $R_t$ las componentes estacional y residual de una descomposición STL, y sugiere la
+diferencia estacional si $F_S > 0{,}64$ (Hyndman y Athanasopoulos, 2021, secciones 4.3 y 9.1). Este
+criterio mide qué tan marcado es el patrón, no si cambia de un año a otro. Los otros dos sí lo
+prueban: la prueba OCSB tiene como hipótesis nula una raíz unitaria estacional (Osborn et al.,
+1988), y la de Canova-Hansen tiene como hipótesis nula que el patrón estacional es estable (Canova
+y Hansen, 1995). La función `ndiffs` aplica la KPSS de forma repetida para sugerir el número de
+diferencias regulares (Hyndman y Khandakar, 2008).
+
+## Transformación de Box-Cox
+
+Para estabilizar la varianza cuando la variabilidad crece con el nivel se usa
+
+$$
+w_t =
+\begin{cases}
+(y_t^{\lambda} - 1)/\lambda, & \lambda \neq 0, \\
+\ln y_t, & \lambda = 0,
+\end{cases}
+$$
+
+que exige $y_t > 0$ (Box y Cox, 1964; Hyndman y Athanasopoulos, 2021, sección 3.1). Con
+$\lambda = 1$ la serie queda igual salvo un desplazamiento. El método de Guerrero divide la serie
+en subseries de un año, con media $m_j$ y desviación $s_j$, y elige el $\lambda$ que hace más
+constante el cociente $s_j / m_j^{1-\lambda}$, es decir, el que minimiza su coeficiente de
+variación entre años (Guerrero, 1993). Lo estimamos solo con el entrenamiento.
+
+## Modelos SARIMA
+
+Un proceso $\{y_t\}$ sigue un modelo **SARIMA(p,d,q)(P,D,Q)~12~** si
+
+$$
+\phi(B)\, \Phi(B^{12})\, (1 - B)^d (1 - B^{12})^D\, y_t = \theta(B)\, \Theta(B^{12})\, a_t ,
+$$
+
+con $a_t$ ruido blanco y los polinomios
+
+$$
+\phi(z) = 1 - \phi_1 z - \dots - \phi_p z^p, \qquad \Phi(z) = 1 - \Phi_1 z - \dots - \Phi_P z^P,
+$$
+
+$$
+\theta(z) = 1 + \theta_1 z + \dots + \theta_q z^q, \qquad \Theta(z) = 1 + \Theta_1 z + \dots + \Theta_Q z^Q
+$$
+
+(Hyndman y Athanasopoulos, 2021, sección 9.9). Es la forma multiplicativa: la parte regular y la
+estacional se multiplican. Con $d = D = 0$ y sin parte estacional es un ARMA(p,q).
+
+**Causalidad e invertibilidad.** Supongamos que $\phi(z)$ y $\theta(z)$ no tienen raíces comunes.
+Un proceso ARMA(p,q) tiene una solución estacionaria y causal, es decir, se puede escribir como
+$y_t = \sum_{j \ge 0} \psi_j a_{t-j}$ con $\sum |\psi_j| < \infty$, si y solo si
+$\phi(z) \neq 0$ para todo $|z| \le 1$, es decir, si las raíces de $\phi(z)$ están fuera del
+círculo unitario (Brockwell y Davis, 2016, teorema 3.1.1). Con la misma condición sobre $\theta(z)$,
+el proceso es invertible: $a_t$ se puede escribir como una combinación de $y_t, y_{t-1}, \dots$
+(Brockwell y Davis, 2016, sección 3.1). En la parte estacional las condiciones son las mismas sobre
+$\Phi(z)$ y $\Theta(z)$. Por eso verificamos que todas las raíces estimadas estén fuera del círculo
+unitario.
+
+**Patrones de identificación.** En un AR(p) la ACF decae y la PACF se corta después del rezago $p$;
+en un MA(q) la ACF se corta después del rezago $q$ y la PACF decae. En la parte estacional ocurre
+lo mismo en los rezagos 12, 24 y 36 (Hyndman y Athanasopoulos, 2021, secciones 9.5 y 9.9).
+
+## Regresión con Errores ARIMA e Intervención
+
+Cuando el modelo incluye variables explicativas, se escribe como una regresión cuyos errores siguen
+un ARIMA:
+
+$$
+y_t = \sum_{i} \beta_i\, x_{it} + \eta_t, \qquad \phi(B)\,\Phi(B^{12})\,(1-B)^d\,\eta_t = \theta(B)\,\Theta(B^{12})\, a_t .
+$$
+
+Con $d = 1$, el modelo equivale a la regresión de $\nabla y_t$ sobre $\nabla x_{it}$ con errores
+ARMA, de modo que los coeficientes relacionan los cambios mensuales de la mora con los cambios de
+las regresoras. Los parámetros se estiman juntos por máxima verosimilitud (Hyndman y
+Athanasopoulos, 2021, secciones 10.1 y 10.2).
+
+**Análisis de intervención.** Cuando un evento con fecha y causa conocidas afecta la serie, su
+efecto se modela con variables construidas a partir de esa fecha $T_0$ (Box y Tiao, 1975):
+
+$$
+P_t^{(T_0)} = \begin{cases} 1, & t = T_0 \\ 0, & t \neq T_0 \end{cases} \ (\text{pulso}),
+\qquad
+S_t^{(T_0)} = \begin{cases} 1, & t \ge T_0 \\ 0, & t < T_0 \end{cases} \ (\text{escalón}),
+$$
+
+y la rampa $C_t = \min\{L,\ \max(0,\ t - T_0 + 1)\}$, que crece de a uno durante $L$ meses y luego
+se queda fija. El efecto en el nivel de la serie es $\omega\, X_t$, con $X_t$ la variable elegida.
+Una rampa en el nivel equivale a un escalón en las diferencias: con $d = 1$, el coeficiente de la
+rampa es el cambio mensual adicional que produjo el evento durante el tramo. Un pulso en el nivel,
+en cambio, solo afecta el mes $T_0$ (Hyndman y Athanasopoulos, 2021, sección 7.4).
+
+**Estacionalidad con variables ficticias.** Si el efecto de cada mes es el mismo todos los años, se
+puede recoger con once variables $D_{jt}$, que valen 1 en el mes $j$ y 0 en los demás, dejando enero
+como referencia para que el modelo sea identificable. El coeficiente $\gamma_j$ es la diferencia
+promedio entre el mes $j$ y enero (Hyndman y Athanasopoulos, 2021, sección 7.4). A diferencia de un
+AR estacional, que deja que el patrón dependa de lo que pasó el mismo mes del año anterior, las
+ficticias imponen un patrón fijo.
+
+**Correlación cruzada preblanqueada.** Para identificar el rezago con que una regresora $x_t$ afecta
+a $y_t$ se ajusta un ARIMA a $x_t$, que lo convierte en un ruido blanco $\alpha_t = \pi(B)\,x_t$, y
+se aplica el mismo filtro a la otra serie, $\beta_t = \pi(B)\,y_t$. Si no hay relación entre las
+series, la correlación cruzada muestral entre $\alpha_{t-L}$ y $\beta_t$ se comporta como la de dos
+ruidos blancos independientes, con banda aproximada $\pm 1{,}96/\sqrt{n}$. Sin el preblanqueo, la
+persistencia propia de cada serie produce correlaciones grandes aunque no estén relacionadas (Box
+et al., 2015, capítulo 12; Cryer y Chan, 2008, capítulo 11).
+
+## Máxima Verosimilitud y Criterios de Información
+
+Bajo el supuesto de que $a_t$ es normal, los parámetros se estiman maximizando la log-verosimilitud
+
+$$
+\ell(\boldsymbol\beta, \sigma^2) = -\frac{n}{2}\ln(2\pi\sigma^2) - \frac{1}{2\sigma^2}\sum_{t} a_t^2 ,
+$$
+
+donde $n$ es el número de observaciones efectivas, que con una diferencia regular es el número de
+meses menos uno. Para $n$ grande, los estimadores son aproximadamente normales, así que cada
+coeficiente se prueba con $z = \hat\beta / \mathrm{ee}(\hat\beta)$, que es significativo al 5 % si
+$|z| > 1{,}96$ (Brockwell y Davis, 2016, sección 5.2).
+
+Para elegir entre modelos usamos
+
+$$
+\mathrm{AICc} = -2\ell + 2k + \frac{2k(k+1)}{n - k - 1}, \qquad \mathrm{BIC} = -2\ell + k\ln n ,
+$$
+
+con $k$ el número de parámetros estimados. El AICc corrige el AIC para muestras pequeñas (Hurvich y
+Tsai, 1989), y el BIC castiga más los parámetros. Los dos solo son comparables entre modelos con la
+misma diferenciación y la misma muestra, porque la verosimilitud se calcula sobre la serie
+diferenciada (Hyndman y Athanasopoulos, 2021, sección 9.6). La búsqueda automática de
+`auto.arima` recorre combinaciones de órdenes con $d$ y $D$ fijos y devuelve la de menor AICc
+(Hyndman y Khandakar, 2008).
+
+## Pruebas sobre los Residuos
+
+**Ljung-Box.** Con los residuos $\hat a_t$ de un modelo con $p + q + P + Q$ coeficientes ARMA,
+
+$$
+Q_m = n(n+2) \sum_{h=1}^{m} \frac{r_h^2(\hat a)}{n - h},
+$$
+
+que, si los residuos no tienen autocorrelación, se distribuye aproximadamente como una $\chi^2$ con
+$m - (p + q + P + Q)$ grados de libertad. La hipótesis nula es que no hay autocorrelación hasta el
+rezago $m$ (Ljung y Box, 1978; Hyndman y Athanasopoulos, 2021, sección 5.4).
+
+**Normalidad.** Con la asimetría $S$ y la curtosis $K$ muestrales de los residuos,
+
+$$
+\mathrm{JB} = \frac{n}{6}\left(S^2 + \frac{(K-3)^2}{4}\right),
+$$
+
+que bajo normalidad se distribuye aproximadamente como una $\chi^2$ con 2 grados de libertad
+(Jarque y Bera, 1987). La complementamos con la prueba de Shapiro-Wilk (Shapiro y Wilk, 1965). La
+normalidad importa porque los intervalos gaussianos la suponen.
+
+**Sobreajuste.** Si al agregar un término AR o MA, regular o estacional, ese término no es
+significativo y el AICc no mejora, el modelo original basta (Box et al., 2015, sección 8.1).
+
+
+## Referencias del Marco
+
+- Box, G. E. P. y Cox, D. R. (1964). An analysis of transformations. *Journal of the Royal Statistical Society, Series B*, 26(2), 211–252.
+- Box, G. E. P., Jenkins, G. M., Reinsel, G. C. y Ljung, G. M. (2015). *Time Series Analysis: Forecasting and Control* (5.ª ed.). Wiley.
+- Box, G. E. P. y Tiao, G. C. (1975). Intervention analysis with applications to economic and environmental problems. *Journal of the American Statistical Association*, 70(349), 70–79.
+- Brockwell, P. J. y Davis, R. A. (2016). *Introduction to Time Series and Forecasting* (3.ª ed.). Springer.
+- Canova, F. y Hansen, B. E. (1995). Are seasonal patterns constant over time? A test for seasonal stability. *Journal of Business & Economic Statistics*, 13(3), 237–252.
+- Cryer, J. D. y Chan, K.-S. (2008). *Time Series Analysis with Applications in R* (2.ª ed.). Springer.
+- Dickey, D. A. y Fuller, W. A. (1979). Distribution of the estimators for autoregressive time series with a unit root. *Journal of the American Statistical Association*, 74(366), 427–431.
+- Guerrero, V. M. (1993). Time-series analysis supported by power transformations. *Journal of Forecasting*, 12(1), 37–48.
+- Hurvich, C. M. y Tsai, C.-L. (1989). Regression and time series model selection in small samples. *Biometrika*, 76(2), 297–307.
+- Hyndman, R. J. y Athanasopoulos, G. (2021). *Forecasting: Principles and Practice* (3.ª ed.). OTexts. <https://otexts.com/fpp3/>
+- Hyndman, R. J. y Khandakar, Y. (2008). Automatic time series forecasting: the forecast package for R. *Journal of Statistical Software*, 27(3), 1–22.
+- Jarque, C. M. y Bera, A. K. (1987). A test for normality of observations and regression residuals. *International Statistical Review*, 55(2), 163–172.
+- Kwiatkowski, D., Phillips, P. C. B., Schmidt, P. y Shin, Y. (1992). Testing the null hypothesis of stationarity against the alternative of a unit root. *Journal of Econometrics*, 54(1–3), 159–178.
+- Ljung, G. M. y Box, G. E. P. (1978). On a measure of lack of fit in time series models. *Biometrika*, 65(2), 297–303.
+- Osborn, D. R., Chui, A. P. L., Smith, J. P. y Birchenhall, C. R. (1988). Seasonality and the order of integration for consumption. *Oxford Bulletin of Economics and Statistics*, 50(4), 361–377.
+- Said, S. E. y Dickey, D. A. (1984). Testing for unit roots in autoregressive-moving average models of unknown order. *Biometrika*, 71(3), 599–607.
+- Shapiro, S. S. y Wilk, M. B. (1965). An analysis of variance test for normality (complete samples). *Biometrika*, 52(3–4), 591–611.
+
 
 # Construcción del Modelo
 
@@ -338,6 +608,24 @@ descartados <- leer("identificacion_descartados.csv")
 coeficientes <- leer("estimacion_coeficientes.csv")
 comparacion  <- leer("estimacion_comparacion.csv")
 seleccion    <- leer("estimacion_seleccion.csv")
+diag_lb      <- leer("diagnostico_ljung_box.csv")
+diag_norm    <- leer("diagnostico_normalidad.csv")
+diag_grandes <- leer("diagnostico_residuos_grandes.csv")
+diag_varcor  <- leer("diagnostico_varianza_correlacion.csv")
+diag_sobre   <- leer("diagnostico_sobreajuste.csv")
+int_comp     <- leer("intervencion_comparacion.csv")
+int_coef     <- leer("intervencion_coeficientes.csv")
+int_sel      <- leer("intervencion_seleccion.csv")
+int_efecto   <- leer("intervencion_efecto.csv")
+tasa_cc      <- leer("tasa_correlacion_preblanqueada.csv")
+tasa_comp    <- leer("tasa_comparacion.csv")
+tasa_estr    <- leer("tasa_por_estructura.csv")
+tasa_sel     <- leer("tasa_seleccion.csv")
+final_coef   <- leer("tasa_final_coeficientes.csv")
+final_lb     <- leer("tasa_final_ljung_box.csv")
+final_norm   <- leer("tasa_final_normalidad.csv")
+final_atip   <- leer("tasa_final_atipicos.csv")
+int_final_lb <- leer("intervencion_final_ljung_box.csv")
 
 si_no <- function(x) if_else(x, "Sí", "No")
 fila  <- function(d, muestra_inicio, i) filter(d, startsWith(muestra, muestra_inicio))[i, ]
@@ -357,6 +645,30 @@ mod_aicc <- seleccion$modelo[grepl("AICc", seleccion$criterio)]
 mod_bic  <- seleccion$modelo[grepl("BIC", seleccion$criterio)]
 sin_ar   <- comparacion$modelo[grepl("^SARIMA\\(0,1,0\\)", comparacion$modelo)]
 ma_est   <- comparacion$modelo[grepl("\\(0,0,1\\)12$", comparacion$modelo)]
+
+# Diagnóstico
+norm_de  <- function(mod, inicio) filter(diag_norm, modelo == mod, startsWith(muestra, inicio))
+sobre_de <- function(term) filter(diag_sobre, modelo_base == mod_bic, termino == term)
+grande_1 <- function(mod) filter(diag_grandes, modelo == mod)[1, ]
+
+# Intervención
+SAR  <- "SARIMA(1,1,0)(1,0,0)12"
+MA3  <- "SARIMA(0,1,3)(2,0,0)12"
+FICT <- "ARIMA(1,1,0) con ficticias por mes"
+int_de  <- function(estr, forma_) filter(int_comp, estructura == estr, forma == forma_)
+icoef_de <- function(estr, forma_, term) filter(int_coef, estructura == estr, forma == forma_, termino == term)
+cambio_en <- function(f) {
+  i <- which(total$fecha == as.Date(f))
+  total$mora_pct[i] - total$mora_pct[i - 1]
+}
+z_mar20 <- filter(int_coef, termino == "p_mar20")$z
+
+# Tasa
+cc_en <- function(k) tasa_cc$correlacion[tasa_cc$rezago == k]
+tcomp_de <- function(estr, v) filter(tasa_comp, estructura == estr, version == v)
+fcoef <- function(term) filter(final_coef, termino == term)
+alza_tasa <- with(tasa, max(tibc_consumo[fecha >= as.Date("2022-01-01") & fecha <= as.Date("2023-12-01")]) -
+                    min(tibc_consumo[fecha >= as.Date("2021-01-01") & fecha <= as.Date("2022-06-01")]))
 ```
 
 ## Muestra y Fecha de Corte
@@ -623,3 +935,417 @@ Los dos criterios no eligen el mismo modelo, y la diferencia en AICc es moderada
 cambiamos la regla para quedarnos con uno: los dos pasan al diagnóstico, y la selección se repite
 cuando se incorpore la intervención. Si el modelo de cinco parámetros solo ganaba por absorber la
 pandemia, ahí va a perder su ventaja.
+
+## Diagnóstico de Residuos
+
+Si un modelo recoge bien la estructura de la serie, lo que queda en sus residuos debe ser ruido
+blanco: sin autocorrelación, con una variabilidad que no cambie con el nivel y, para que los
+intervalos gaussianos sean válidos, con distribución normal. Revisamos esas tres cosas en los dos
+modelos que dejó la estimación, y al final probamos si a alguno le falta un término.
+
+```{r}
+#| label: fig-residuos
+#| fig-cap: "Residuos estandarizados de los dos modelos, entrenamiento."
+#| fig-height: 6
+
+knitr::include_graphics("figuras/modelo/residuos.png")
+```
+
+En la gráfica se ve de entrada dónde está el problema: fuera de 2020 los residuos oscilan alrededor
+de cero sin patrón, y en 2020 aparecen saltos de varias desviaciones.
+
+**Autocorrelación.** La prueba de Ljung-Box no rechaza en ningún rezago ni en ningún modelo: el
+valor p más bajo es `r num(min(diag_lb$valor_p))`. En la ACF y la PACF de los residuos casi todos los
+rezagos quedan dentro de la banda; solo el rezago 10 del `r mod_aicc` toca el borde en la PACF, y
+entre 36 rezagos es esperable que alguno lo haga por azar.
+
+```{r}
+#| label: tabla-ljung-box
+
+diag_lb |>
+  transmute(Modelo = modelo, Rezago = rezago, Q = num(q), `Grados de libertad` = gl,
+            `Valor p` = num(valor_p, 3)) |>
+  knitr::kable(align = "lrrrr",
+               caption = "Prueba de Ljung-Box sobre los residuos (H0: no hay autocorrelación).")
+```
+
+```{r}
+#| label: fig-acf-residuos-bic
+#| fig-cap: "ACF y PACF de los residuos del SARIMA(1,1,0)(1,0,0)12."
+
+knitr::include_graphics("figuras/modelo/acf_residuos_110_100.png")
+```
+
+```{r}
+#| label: fig-acf-residuos-aicc
+#| fig-cap: "ACF y PACF de los residuos del SARIMA(0,1,3)(2,0,0)12."
+
+knitr::include_graphics("figuras/modelo/acf_residuos_013_200.png")
+```
+
+**Normalidad.** Con todo el entrenamiento la normalidad se rechaza con fuerza en los dos modelos,
+con curtosis de `r num(norm_de(mod_bic, "Todo")$curtosis, 1)` y
+`r num(norm_de(mod_aicc, "Todo")$curtosis, 1)`, muy lejos del 3 de una normal. Pero al quitar los
+meses de los alivios los residuos son normales: el valor p de Jarque-Bera sube a
+`r num(norm_de(mod_bic, "Sin")$jb_valor_p)` y `r num(norm_de(mod_aicc, "Sin")$jb_valor_p)`, y la
+curtosis queda cerca de 3. La falta de normalidad viene entera de la pandemia.
+
+```{r}
+#| label: tabla-normalidad
+
+diag_norm |>
+  transmute(Modelo = modelo, Muestra = muestra, n, `Asimetría` = num(asimetria),
+            Curtosis = num(curtosis), `Jarque-Bera (p)` = num(jb_valor_p, 3),
+            `Shapiro-Wilk (p)` = num(shapiro_valor_p, 3)) |>
+  knitr::kable(align = "llrrrrr", caption = "Normalidad de los residuos.")
+```
+
+```{r}
+#| label: fig-histograma
+#| fig-cap: "Histograma de los residuos estandarizados frente a la normal estándar."
+
+knitr::include_graphics("figuras/modelo/residuos_histograma.png")
+```
+
+```{r}
+#| label: fig-qq
+#| fig-cap: "Gráfico Q-Q de los residuos estandarizados."
+
+knitr::include_graphics("figuras/modelo/residuos_qq.png")
+```
+
+En el histograma y en el gráfico Q-Q se ve lo mismo: la mayoría de los residuos sigue bien a la
+normal, y los que se alejan son unos pocos meses en la cola derecha.
+
+Los meses con los residuos más grandes son los mismos en los dos modelos:
+
+```{r}
+#| label: tabla-residuos-grandes
+
+diag_grandes |>
+  group_by(modelo) |>
+  slice_head(n = 4) |>
+  ungroup() |>
+  transmute(Modelo = modelo, Mes = mes_anio(fecha), `Residuo (pp)` = num(residuo),
+            `Desviaciones` = num(estandarizado, 1)) |>
+  knitr::kable(align = "llrr", caption = "Meses con los residuos más grandes.")
+```
+
+El mayor es `r mes_anio(grande_1(mod_bic)$fecha)`, con `r num(grande_1(mod_bic)$estandarizado, 1)`
+y `r num(grande_1(mod_aicc)$estandarizado, 1)` desviaciones, cuando la mora pasa de
+`r num(valor_en("2020-07-01"))` % a `r num(valor_en("2020-08-01"))` % al empezar a vencerse los
+periodos de gracia. Le siguen octubre de 2020, el salto más grande del rebote, y marzo de 2020, el
+inicio de los alivios. Son exactamente los momentos de la caída y el rebote que describimos en el
+análisis exploratorio, y son la evidencia que justifica incorporar una intervención.
+
+**Varianza frente al nivel.** Es la revisión que quedó pendiente de la transformación. Sin 2020 y
+2021, la desviación de los residuos por año no sigue un patrón claro frente al nivel de la mora:
+años con mora baja, como 2016, tienen casi la misma variabilidad que 2023, el de la mora más alta.
+La correlación entre las dos (`r num(diag_varcor$correlacion_sin_alivios[diag_varcor$modelo == mod_bic])`
+en el modelo sencillo, con solo siete años) vuelve a depender de 2023. Se confirma la decisión de
+trabajar en la escala original.
+
+```{r}
+#| label: fig-varianza-residuos
+#| fig-cap: "Variabilidad de los residuos frente al nivel de la mora, por año."
+
+knitr::include_graphics("figuras/modelo/residuos_varianza.png")
+```
+
+**Sobreajuste.** Al modelo sencillo le agregamos un término a la vez para ver si le falta algo.
+
+```{r}
+#| label: tabla-sobreajuste
+
+diag_sobre |>
+  transmute(`Modelo base` = modelo_base, `Modelo ampliado` = modelo, `Término agregado` = termino,
+            `Estimación` = num(estimacion, 3), z = num(z), `ΔAICc` = num(delta_aicc)) |>
+  knitr::kable(align = "lllrrr",
+               caption = "Prueba de sobreajuste: cada modelo con un término más.")
+```
+
+En la parte regular no falta nada: el AR(2) (z = `r num(sobre_de("ar2")$z)`) y el MA(1)
+(z = `r num(sobre_de("ma1")$z)`) no son significativos y empeoran el AICc, lo que confirma que el
+MA regular que habíamos dejado reservado en la identificación no hace falta. Un segundo AR estacional tampoco
+aporta (z = `r num(sobre_de("sar2")$z)`). Lo llamativo es el MA estacional: mejora el AICc en
+`r num(abs(sobre_de("sma1")$delta_aicc), 1)` puntos, pero su coeficiente sale en
+`r num(sobre_de("sma1")$estimacion, 3)`, prácticamente en −1, y en el otro modelo pasa lo mismo.
+Un MA estacional pegado a −1 está en el límite de la invertibilidad, así que su error estándar no
+es confiable. Además es la señal de que el patrón estacional es fijo: el término
+(1 − `r num(abs(sobre_de("sma1")$estimacion))`B^12^) casi equivale a restar el mismo mes del año anterior, que es la forma en que el
+modelo intenta quitar un efecto que se repite igual cada año.
+
+Por lo anterior, los dos modelos dejan los residuos sin autocorrelación y con varianza estable,
+pero no son normales por los meses de la pandemia, lo que hace necesaria la intervención. Y la
+prueba de sobreajuste sugiere probar la estacionalidad con variables ficticias por mes, que
+recogen directamente un efecto fijo de cada mes.
+
+## Intervención y Atípicos
+
+El diagnóstico dejó dos tareas: modelar los alivios y comparar el AR estacional con las variables
+ficticias por mes. Para los alivios creamos variables que marcan distintos momentos del periodo:
+
+| Variable | Qué marca |
+|---|---|
+| Indicadora de alivios | 1 de marzo de 2020 a junio de 2021, todo el periodo |
+| Pulsos de marzo, agosto y octubre de 2020 | El inicio de los alivios, el comienzo del vencimiento de las gracias y el salto más grande del rebote |
+| Rampa de caída | Crece de 1 a 5 entre marzo y julio de 2020 y luego se queda en 5 |
+| Rampa de rebote | Crece de 1 a 6 entre agosto de 2020 y enero de 2021 y luego se queda en 6 |
+
+Con la diferencia regular, una rampa en el nivel equivale a un cambio constante en cada mes del
+tramo, y un pulso en el nivel es un efecto que dura un solo mes. Combinamos estas variables en
+varias formas y las probamos en tres estructuras: los dos modelos del diagnóstico y un ARIMA(1,1,0)
+con variables ficticias por mes, con enero como referencia. Todos tienen la misma diferenciación y
+la misma muestra, así que el AICc es comparable entre ellos.
+
+```{r}
+#| label: tabla-intervencion-aicc
+
+orden_formas <- c("Sin intervención", "Indicadora de alivios", "Pulsos de inicio y rebote",
+                  "Pulsos de marzo, agosto y octubre", "Rampas de caída y rebote",
+                  "Rampas de caída y rebote corto")
+int_comp |>
+  mutate(forma = factor(forma, levels = orden_formas)) |>
+  arrange(forma) |>
+  select(Forma = forma, estructura, aicc) |>
+  mutate(aicc = num(aicc, 1)) |>
+  tidyr::pivot_wider(names_from = estructura, values_from = aicc) |>
+  knitr::kable(caption = "AICc de cada estructura con cada forma de intervención (menor es mejor).")
+```
+
+Dos resultados salen claros. El primero es que las ficticias ganan al AR estacional: sin ninguna
+intervención, el modelo con ficticias tiene un AICc de `r num(int_de(FICT, "Sin intervención")$aicc, 1)`
+frente a `r num(int_de(SAR, "Sin intervención")$aicc, 1)` del modelo con AR estacional, aun con once
+parámetros más, y la ventaja se mantiene con todas las formas de intervención. Confirma lo que
+sugirió la prueba de sobreajuste: la estacionalidad es fija.
+
+El segundo es que la indicadora de todo el periodo no sirve, porque mejora el AICc en menos de dos
+puntos, y que el pulso de marzo no es significativo en ningún modelo (z entre
+`r num(min(z_mar20))` y `r num(max(z_mar20))`). Los pulsos de agosto y octubre sí lo son, y las
+rampas son la mejor forma en las tres estructuras.
+
+Pero en una primera vuelta solo teníamos la rampa de rebote de seis meses, y ninguna forma dejaba
+los residuos limpios. Con las rampas, el residuo más grande se movía a noviembre de 2020, y con los
+pulsos agosto seguía con más de cinco desviaciones: un pulso dura un mes, y en agosto la mora subió
+y se quedó arriba. La razón aparece al mirar los cambios mensuales del rebote:
+
+```{r}
+#| label: tabla-cambios-rebote
+
+meses_rebote <- c("2020-08-01", "2020-09-01", "2020-10-01", "2020-11-01", "2020-12-01", "2021-01-01")
+tibble::tibble(Mes = mes_anio(as.Date(meses_rebote)),
+               `Cambio de la mora (pp)` = num(purrr::map_dbl(meses_rebote, cambio_en))) |>
+  knitr::kable(align = "lr", caption = "Cambio mensual de la mora durante el rebote.")
+```
+
+El rebote no fue parejo durante seis meses: se concentró entre agosto y octubre de 2020 y casi se
+detuvo después. La rampa larga reparte esa subida en seis meses, así que se queda corta en agosto
+y octubre y se pasa en noviembre y diciembre. Por eso, en una segunda vuelta, agregamos una rampa de
+rebote corta, de agosto a octubre de 2020, que crece de 1 a 3 y luego se queda en 3. La forma
+tiene sustento en los hechos: en agosto de 2020 empiezan a vencerse las gracias, y en esos tres
+meses aparece la cartera atrasada que los alivios habían contenido. Esta forma se agregó después
+de ver la primera comparación, y así lo dejamos registrado.
+
+Con la rampa de caída y el rebote corto, el AICc mejora unos 40 puntos frente a las rampas largas
+en las tres estructuras. Ya no queda ningún residuo de más de tres desviaciones y la normalidad se
+cumple con todo el entrenamiento. Los coeficientes son muy significativos: en el modelo con
+ficticias, la mora baja `r num(abs(icoef_de(FICT, "Rampas de caída y rebote corto", "caida")$estimacion))`
+puntos por mes entre marzo y julio de 2020 y sube
+`r num(icoef_de(FICT, "Rampas de caída y rebote corto", "rebote_corto")$estimacion)` puntos por mes
+entre agosto y octubre.
+
+```{r}
+#| label: tabla-intervencion-final
+
+int_comp |>
+  filter(forma == "Rampas de caída y rebote corto") |>
+  transmute(Estructura = estructura, `Parámetros` = parametros, AICc = num(aicc, 1), BIC = num(bic, 1),
+            `Ljung-Box (p, rezago 24)` = num(ljung_box_p, 3), `Jarque-Bera (p)` = num(jb_p, 3),
+            `Mayor residuo` = num(max_residuo, 1)) |>
+  knitr::kable(align = "lrrrrrr", caption = "Las tres estructuras con la rampa de caída y el rebote corto.")
+```
+
+```{r}
+#| label: fig-efecto-intervencion
+#| fig-cap: "Efecto estimado de la intervención sobre la mora."
+
+knitr::include_graphics("figuras/modelo/efecto_intervencion.png")
+```
+
+El efecto estimado tiene la forma de los datos: la mora baja cerca de
+`r num(abs(min(int_efecto$efecto)), 1)` puntos hasta julio de 2020, sube en tres meses y queda
+`r num(tail(int_efecto$efecto, 1), 1)` puntos por encima de donde estaba. Ese efecto permanente
+tiene sentido, porque al acabarse las gracias apareció la mora acumulada, y con la diferencia
+regular un cambio de nivel no afecta el pronóstico, que siempre parte del último nivel observado.
+
+Lo que queda pendiente es la autocorrelación. Con la pandemia modelada, el Ljung-Box falla en el
+modelo con ficticias (p = `r num(int_de(FICT, "Rampas de caída y rebote corto")$ljung_box_p, 3)`) y en
+el modelo con AR estacional (p = `r num(int_de(SAR, "Rampas de caída y rebote corto")$ljung_box_p, 3)`),
+y el `r MA3` pasa justo (p = `r num(int_de(MA3, "Rampas de caída y rebote corto")$ljung_box_p, 3)`),
+aunque en el rezago 12 también falla (p = `r num(int_final_lb$valor_p[int_final_lb$rezago == 12], 3)`).
+Mientras la pandemia dejaba residuos enormes, tapaba lo demás; ahora queda a la vista.
+
+```{r}
+#| label: fig-residuos-intervencion
+#| fig-cap: "Residuos estandarizados del modelo con la intervención."
+
+knitr::include_graphics("figuras/modelo/residuos_final.png")
+```
+
+En los residuos se ve qué es: en 2022 y 2023 son casi todos positivos, es decir, el modelo se queda
+corto mes tras mes durante la subida de la mora. En la ACF, los rezagos 3 a 6 son todos positivos y
+el rezago 9 se sale de la banda, mientras que el 12 queda bien, así que no es un problema de la
+parte estacional sino de algo que se mueve despacio y empuja la mora varios meses seguidos.
+
+```{r}
+#| label: fig-acf-intervencion
+#| fig-cap: "ACF y PACF de los residuos del modelo con la intervención."
+
+knitr::include_graphics("figuras/modelo/acf_residuos_final.png")
+```
+
+Entonces la intervención queda definida con la rampa de caída y el rebote corto, y la selección
+queda abierta: las tres estructuras pasan a la siguiente etapa, donde probamos si la tasa de
+interés, que subió justo en 2022 y 2023, explica lo que falta.
+
+## Tasa de Interés como Regresora
+
+La tasa entra en el modelo con un rezago de al menos seis meses, igual al horizonte de pronóstico,
+para que el modelo use valores ya observados y no haya que pronosticar también la tasa. Para
+identificar el rezago usamos la correlación cruzada preblanqueada: ajustamos un ARIMA a la tasa,
+aplicamos ese mismo filtro a la mora y calculamos la correlación entre las dos series filtradas.
+Así se quita la persistencia propia de cada una, que en niveles infla las correlaciones, y queda
+solo la relación entre ellas. Es el método de Box y Jenkins para funciones de transferencia, y lo
+calculamos con datos hasta diciembre de 2023 y sin los meses de alivios.
+
+```{r}
+#| label: fig-correlacion-preblanqueada
+#| fig-cap: "Correlación cruzada preblanqueada entre la tasa de hace L meses y la mora."
+
+knitr::include_graphics("figuras/modelo/correlacion_preblanqueada.png")
+```
+
+Con una banda de ±`r num(tasa_cc$banda[1])`, la correlación más fuerte está en el rezago 9
+(`r num(cc_en(9))`), y el 7 queda en el borde (`r num(cc_en(7))`). También salen los rezagos 1 y 2
+(`r num(cc_en(1))` y `r num(cc_en(2))`): hay un efecto casi inmediato de la tasa, pero no se puede
+usar, porque para pronosticar a seis meses habría que pronosticar también la tasa. Dentro de los
+rezagos que sí sirven, la relación se concentra entre los 7 y los 9 meses.
+
+Con eso estimamos las tres estructuras, todas con la intervención, con la tasa de cada rezago entre
+6 y 12 meses, y también con el promedio de tres meses de la tasa, que suaviza los saltos de la
+época en que se certificaba cada trimestre.
+
+```{r}
+#| label: tabla-tasa-estructura
+
+tasa_estr |>
+  transmute(Estructura = estructura, `AICc sin tasa` = num(aicc_sin_tasa, 1),
+            `Mejor versión de la tasa` = mejor_version, `AICc con la tasa` = num(aicc_mejor, 1),
+            `Mejora` = num(mejora_aicc, 1)) |>
+  knitr::kable(align = "lrlrr", caption = "Mejora del AICc al incluir la tasa de interés.")
+```
+
+La tasa mejora el AICc entre `r num(min(tasa_estr$mejora_aicc), 1)` y
+`r num(max(tasa_estr$mejora_aicc), 1)` puntos en las tres estructuras, y en las tres gana la misma
+versión: el promedio de la tasa de hace 6, 7 y 8 meses. El coeficiente es positivo y muy
+significativo, como se espera: una tasa más alta lleva a más mora meses después. Los promedios de
+tres meses ganan casi siempre a la tasa de un solo mes, lo que confirma que suavizar la escalera
+trimestral ayuda.
+
+El rezago exacto, en cambio, no queda bien definido. En el modelo con ficticias, los promedios con
+rezago de 6, 8 y 9 meses quedan casi empatados (ΔAICc de
+`r num(tcomp_de(FICT, "Promedio de 3 meses con rezago de 6 meses")$delta_aicc, 2)`,
+`r num(tcomp_de(FICT, "Promedio de 3 meses con rezago de 8 meses")$delta_aicc, 2)` y
+`r num(tcomp_de(FICT, "Promedio de 3 meses con rezago de 9 meses")$delta_aicc, 2)`). La relación con
+la tasa existe, pero no apunta a un mes preciso. Siguiendo la regla, nos quedamos con el de menor
+AICc, que además es el más útil para pronosticar.
+
+Para elegir el modelo exigimos que fuera estacionario e invertible y que pasara el Ljung-Box en los
+rezagos 12 y 24, y entre esos tomamos el menor AICc. El rezago 12 lo agregamos a la regla porque
+era donde fallaba el modelo anterior. El AICc y el BIC eligen el mismo: el
+`r tasa_sel$estructura[1]`, junto con la intervención y la tasa en su versión de
+`r sub("^promedio", "promedio", tolower(tasa_sel$version[1]))`.
+
+## Modelo Final
+
+El modelo queda como una regresión con errores ARIMA:
+
+$$
+y_t = \beta_C\,C_t + \beta_R\,R_t + \beta_T\,\bar{x}_{t-6} + \sum_{j=2}^{12} \gamma_j D_{jt} + \eta_t,
+\qquad (1 - \phi B)(1 - B)\,\eta_t = a_t ,
+$$
+
+donde $y_t$ es el índice de mora, $C_t$ y $R_t$ son las rampas de caída y de rebote corto,
+$\bar{x}_{t-6}$ es el promedio de la tasa de hace 6, 7 y 8 meses, $D_{jt}$ son las variables
+ficticias de cada mes (con enero como referencia) y $a_t$ es ruido blanco.
+
+```{r}
+#| label: tabla-modelo-final
+
+nombre_termino <- function(t) {
+  dplyr::case_when(
+    t == "ar1" ~ "AR(1) regular (φ)",
+    t == "caida" ~ "Rampa de caída (βC)",
+    t == "rebote_corto" ~ "Rampa de rebote corto (βR)",
+    startsWith(t, "tasa") ~ "Tasa de interés (βT)",
+    startsWith(t, "mes_") ~ paste0(tools::toTitleCase(MESES_LARGOS[as.integer(substr(t, 5, 6))])),
+    TRUE ~ t
+  )
+}
+final_coef |>
+  transmute(`Término` = nombre_termino(termino), `Estimación` = num(estimacion, 3),
+            `Error estándar` = num(error_estandar, 3), z = num(z)) |>
+  knitr::kable(align = "lrrr", caption = "Coeficientes del modelo final.")
+```
+
+Los coeficientes se leen así. El AR(1) (`r num(fcoef("ar1")$estimacion)`) recoge la persistencia del
+cambio mensual. La rampa de caída dice que con los alivios la mora bajó
+`r num(abs(fcoef("caida")$estimacion))` puntos por mes entre marzo y julio de 2020, y la de rebote
+que subió `r num(fcoef("rebote_corto")$estimacion)` puntos por mes entre agosto y octubre. El
+coeficiente de la tasa (`r num(final_coef$estimacion[startsWith(final_coef$termino, "tasa")], 3)`)
+indica que si la tasa sube un punto, la mora sube unos
+`r num(final_coef$estimacion[startsWith(final_coef$termino, "tasa")])` puntos de seis a ocho meses
+después. Entre 2021 y 2023 la tasa subió cerca de `r num(alza_tasa, 0)` puntos, lo que explicaría
+unos `r num(alza_tasa * final_coef$estimacion[startsWith(final_coef$termino, "tasa")], 1)` puntos de
+la subida de la mora: una parte importante, pero no toda. Los efectos de los meses coinciden con el
+perfil estacional del análisis exploratorio: diciembre queda
+`r num(abs(fcoef("mes_12")$estimacion))` puntos por debajo de enero, y abril y mayo
+`r num(fcoef("mes_04")$estimacion)` y `r num(fcoef("mes_05")$estimacion)` puntos por encima.
+
+```{r}
+#| label: tabla-diagnostico-final
+
+final_lb |>
+  transmute(Rezago = rezago, Q = num(q), `Grados de libertad` = gl, `Valor p` = num(valor_p, 3)) |>
+  knitr::kable(align = "rrrr", caption = "Ljung-Box sobre los residuos del modelo final.")
+```
+
+En el diagnóstico, el modelo pasa el Ljung-Box en los rezagos 12 y 24
+(p = `r num(final_lb$valor_p[final_lb$rezago == 12], 3)` y
+`r num(final_lb$valor_p[final_lb$rezago == 24], 3)`), que es la regla que fijamos. En el rezago 36 no
+pasa (p = `r num(final_lb$valor_p[final_lb$rezago == 36], 3)`), por dos rezagos aislados que se salen
+de la banda, el 15 y el 28. Con 36 rezagos es esperable que uno o dos se salgan por azar, y ninguno
+de los dos corresponde a un patrón con sentido para la serie, así que lo reportamos pero no
+cambiamos el modelo por eso. Los residuos son normales con todo el entrenamiento (Jarque-Bera
+p = `r num(final_norm$jb_valor_p[startsWith(final_norm$muestra, "Todo")], 3)`), no queda ningún mes
+con más de tres desviaciones (`r nrow(final_atip)` atípicos) y los residuos de 2022 y 2023 ya se
+reparten a los dos lados de cero: la tasa explicó buena parte de lo que faltaba.
+
+```{r}
+#| label: fig-residuos-modelo-final
+#| fig-cap: "Residuos estandarizados del modelo final."
+
+knitr::include_graphics("figuras/modelo/residuos_tasa.png")
+```
+
+```{r}
+#| label: fig-acf-modelo-final
+#| fig-cap: "ACF y PACF de los residuos del modelo final."
+
+knitr::include_graphics("figuras/modelo/acf_residuos_tasa.png")
+```
+
+Con esto queda construido el modelo que pasa a la validación: un ARIMA(1,1,0) con variables
+ficticias por mes, la rampa de caída y el rebote corto para los alivios y la tasa de interés
+promedio de tres meses con seis meses de rezago. Todas sus decisiones se tomaron con la muestra de
+entrenamiento, y los datos de 2024 a 2026 todavía no se han usado.

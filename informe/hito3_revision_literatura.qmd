@@ -235,6 +235,7 @@ Sin embargo, sus resultados corresponden a simulaciones y no a una comparación 
 # Comparación de los estudios
 
 ```{=latex}
+\clearpage
 \begin{landscape}
 \footnotesize
 ```

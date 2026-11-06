@@ -117,16 +117,19 @@ Se utilizaron términos como *non-performing loans forecasting*, *credit delinqu
 
 ## Criterios de selección
 
-Se consideraron cuatro criterios principales:
+Se establecieron cinco criterios:
 
-1. **Pertinencia:** relación con la mora crediticia, preferiblemente de consumo.
-2. **Metodología:** descripción de los modelos empleados.
-3. **Resultados:** disponibilidad de hallazgos verificables.
-4. **Utilidad:** relación con el pronóstico o la dinámica de nuestra serie.
+1. **Acceso:** disponibilidad del texto completo para revisar el estudio.
+2. **Pertinencia:** relación con la mora crediticia, preferiblemente de consumo.
+3. **Metodología:** descripción de los datos y de los modelos empleados.
+4. **Resultados:** disponibilidad de hallazgos verificables en el documento.
+5. **Utilidad:** aporte al pronóstico o a la interpretación de la dinámica de nuestra serie.
 
-Para la comparación predictiva se distingue si el resultado procede del ajuste, de una prueba con observaciones reservadas o de una proyección sin contraste con datos realizados. Los trabajos de dinámica y estrés se conservan como antecedentes nacionales; sus respuestas a choques no se cuentan como errores de pronóstico. El corpus empírico comprende nueve estudios: cinco artículos de revista, tres documentos del Banco de la República y un trabajo de maestría. La referencia metodológica y la circular se citan aparte. Se excluyen de la comparación de precisión los resultados sin un horizonte identificable y los escenarios sin contraste con valores observados.
+Se excluyen las fuentes consultadas únicamente mediante resúmenes o registros bibliográficos, porque no permiten verificar suficientemente los datos, los métodos y los resultados.
 
-En los artículos cuyo texto completo no estuvo disponible, se utilizó únicamente la información publicada en sus resúmenes editoriales.
+Para la comparación predictiva se distingue si el resultado procede del ajuste, de una prueba con observaciones reservadas o de una proyección sin contraste con datos realizados. Los trabajos de dinámica y estrés se conservan como antecedentes nacionales; sus respuestas a choques no se cuentan como errores de pronóstico.
+
+El corpus empírico comprende ocho estudios: cuatro artículos de revista, tres documentos del Banco de la República y un trabajo de maestría. La referencia metodológica y la circular se citan aparte. Se excluyen de la comparación directa de precisión por horizonte los resultados sin una anticipación identificable y los escenarios sin contraste con valores observados.
 
 # Revisión de la literatura
 
@@ -152,7 +155,11 @@ El estudio demuestra la importancia de evaluar los modelos frente a referentes y
 
 ### Abdullah y colaboradores (2023)
 
-@abdullah2023 comparan 14 modelos con datos trimestrales de 322 bancos de 15 economías emergentes. El resultado de 76,10 % corresponde al coeficiente de determinación en la muestra de prueba del bosque aleatorio. No representa una tasa de aciertos ni un error del ICV colombiano; tampoco basta para concluir que el método supera al ingenuo en un horizonte de tres o seis meses.
+@abdullah2023 comparan 14 modelos utilizando 14.394 observaciones banco-trimestre de 322 bancos de 15 países emergentes, entre 2001-T1 y 2022-T3. Destinan el 75 % de las observaciones al entrenamiento y el 25 % a la prueba. Los hiperparámetros se seleccionan mediante validación cruzada dentro del entrenamiento.
+
+Según la tabla 4, el bosque aleatorio obtiene en prueba un RMSE de 0,016, un MAE de 0,012 y un R² de 0,776. Existe una discrepancia con el resumen y la discusión, que mencionan 76,10 %; en la tabla, ese valor corresponde al R² de entrenamiento. Para esta revisión se toman los resultados identificados explícitamente como prueba en la tabla 4.
+
+El artículo aporta una comparación de métodos con observaciones reservadas, pero la metodología revisada no precisa un horizonte de anticipación en trimestres. Por ello, sus resultados no se interpretan como evidencia directa de desempeño a tres o seis meses.
 
 ### Hincapié Clavijo y Ramírez Cañaveral (2026)
 
@@ -171,14 +178,6 @@ Es uno de los antecedentes más cercanos a nuestro proyecto. La principal difere
 Los autores distinguen los efectos relacionados con la capacidad de pago de los deudores y el riesgo asumido al otorgar préstamos. Encuentran que unas condiciones económicas favorables pueden mejorar la capacidad de pago y, al mismo tiempo, acompañarse de una mayor toma de riesgo.
 
 El estudio permite comprender mejor la evolución de la mora, aunque no presenta una comparación de errores predictivos equivalente a la nuestra.
-
-### Quimbay y Alvarez (2025)
-
-@quimbay2025 investigan la relación entre los ciclos económicos y los indicadores de cartera y mora colombianos durante 2006–2022.
-
-Utilizan correlaciones con rezagos y modelos VAR. Según el resumen editorial, los resultados de ambos procedimientos son consistentes y muestran relaciones temporales entre las variables.
-
-Este antecedente respalda el análisis de relaciones rezagadas, pero no fue posible verificar métricas de pronóstico fuera de muestra.
 
 ## Modelos macroeconómicos y escenarios de riesgo
 
@@ -215,7 +214,7 @@ Sin embargo, sus resultados corresponden a simulaciones y no a una comparación 
 
 ## Tabla comparativa
 
-Las dos tablas reúnen las nueve investigaciones revisadas. Se presentan los datos, los métodos, los horizontes, las métricas y los resultados principales.
+Las dos tablas reúnen las ocho investigaciones revisadas. Se presentan los datos, los métodos, los horizontes, las métricas y los resultados principales.
 
 Para comparar desempeño, se exige que el horizonte evaluado, la métrica y el resultado puedan identificarse. Una métrica de ajuste se distingue de un error fuera de muestra.
 
@@ -225,13 +224,12 @@ Para comparar desempeño, se exige que el horizonte evaluado, la métrica y el r
 | @cortes2024 | 8 países; trimestral | Panel frente a AR(1) | 4, 8 y 20 trimestres | MSFE del AR(1) / MSFE del panel | Consumo en Colombia, 3SLS: 1,2; 6,3; 1,3 |
 | @hincapie2026 | Colombia; mensual | VAR, VARX, VECM | 1 paso; 12 evaluaciones | RMSE y MAE | VECM en niveles: RMSE 0,0013 |
 
-**Antecedentes complementarios.** Se presentan aparte porque su horizonte no se pudo verificar o porque evalúan dinámica y escenarios.
+**Antecedentes complementarios.** Se presentan aparte porque no se identifica claramente la anticipación del pronóstico en la metodología revisada o porque sus resultados corresponden a dinámica y escenarios.
 
 | Fuente | Datos | Método | Horizonte | Métrica | Resultado |
 |:--------------|:----------------|:----------------|:----------------|:-----------------|:------------------------|
-| @abdullah2023 | 322 bancos; 15 países | 14 modelos | No verificado | R² en prueba | RF: 0,761 |
+| @abdullah2023 | 322 bancos de 15 países; trimestral, 2001-T1–2022-T3 | 14 modelos; entrenamiento/prueba 75/25 | Anticipación en trimestres no especificada claramente en la metodología | RMSE, MAE y R² en prueba | Bosque aleatorio, tabla 4: RMSE 0,016; MAE 0,012; R² 0,776 |
 | @gamba2021 | Colombia; consumo | Descomposición y VAR | Análisis dinámico | No comparable | Capacidad de pago y riesgo |
-| @quimbay2025 | Colombia; 2006–2022 | Correlaciones y VAR | No verificado | No verificado | Relación con ciclos |
 | @gutierrez2008 | Colombia; mensual | VEC y estrés | Escenarios | Cambio del ICV | 6,68 % a 12,41 % |
 | @cabrera2012 | Colombia; banca | Modelos de estrés | 8 trimestres | No comparable | Resistencia ante choque |
 | @benavides2023 | Colombia; crédito | VARX | Choques simulados | No comparable | Efectos persistentes |

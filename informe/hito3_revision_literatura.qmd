@@ -1,3 +1,4 @@
+
 ---
 title: "Pronóstico de la mora en la cartera de consumo en Colombia"
 subtitle: "Hito 3: Revisión de literatura"
@@ -62,7 +63,15 @@ citeproc: true
 
 ¿Pronostica un modelo SARIMA con la tasa de interés rezagada la mora mensual de la cartera de consumo en Colombia a tres y seis meses con menor MASE que el ingenuo simple y el suavizamiento exponencial ETS seleccionado por AICc, para apoyar la decisión mensual de la Superintendencia Financiera de priorizar una revisión del riesgo de esa cartera y de la suficiencia de sus provisiones?
 
-El índice de mora es el porcentaje del saldo de consumo con más de 30 días de atraso. Se construye con los saldos de ocho productos de consumo reportados por las entidades a la Superintendencia Financiera de Colombia (SFC). La serie contiene 139 observaciones mensuales, de enero de 2015 a julio de 2026. La covariable es la tasa de interés bancario corriente para consumo y ordinario. El rezago se seleccionará entre seis y doce meses, únicamente en el entrenamiento, de modo que el pronóstico a seis meses pueda usar tasas ya conocidas en el origen. En la especificación revisada se caracterizan los quiebres de la serie sin atribuirlos a una intervención por los alivios financieros.
+El índice de mora es el porcentaje del saldo de consumo con más de 30 días de atraso. Se construye con los saldos de ocho productos de consumo reportados por las entidades a la Superintendencia Financiera de Colombia (SFC). La serie contiene 139 observaciones mensuales, de enero de 2015 a julio de 2026. La covariable es la tasa de interés bancario corriente para consumo y ordinario. El rezago se seleccionará entre seis y doce meses, únicamente en el entrenamiento, de modo que el pronóstico a seis meses pueda usar tasas ya conocidas en el origen. Los cambios observados durante 2020 y 2021 se caracterizarán como posibles quiebres; no se atribuirán causalmente a los alivios ni se impondrá una intervención sin evidencia diagnóstica.
+
+## Justificación de la investigación
+
+La Superintendencia Financiera de Colombia (SFC) supervisa el riesgo de crédito de las entidades vigiladas. Un pronóstico agregado de la mora de consumo puede servir como señal para **priorizar el seguimiento y la revisión de los análisis prospectivos** de las entidades; no determina, por sí solo, las provisiones exigibles a cada establecimiento. La decisión tiene costos potenciales en ambas direcciones: anticipar un deterioro que no se materializa puede desviar recursos de supervisión y motivar evaluaciones innecesarias; subestimarlo puede retrasar una revisión oportuna del riesgo. La Circular Externa 026 de 2022 constituye un ejemplo de una respuesta regulatoria relacionada con provisiones ante deterioro prospectivo de la cartera [@sfc2022].
+
+Como práctica institucional de referencia, el Esquema de Pruebas de Resistencia exige evaluar el comportamiento de las entidades bajo escenarios macroeconómicos y horizontes de mediano plazo [@sfc2015]. Estos ejercicios no equivalen a una validación estadística, con origen móvil, de la precisión de una serie agregada a tres o seis meses. El proyecto propone una alerta de corto plazo **complementaria**, sin pretender sustituir las pruebas de resistencia ni atribuir a la SFC la adopción de este procedimiento.
+
+La información se actualizaría con cada nuevo corte mensual de cartera [@sfcmuric]. El horizonte de tres meses permite revisar el riesgo anticipado para el trimestre siguiente y contrastar su evolución con la periodicidad de la encuesta sobre la situación del crédito [@banrepencuesta]. El horizonte de seis meses amplía la anticipación para programar seguimiento y es comparable, en escala temporal, con la publicación semestral del Reporte de Estabilidad Financiera [@banrepref]. Estas comparaciones **motivan** los horizontes, pero no implican que las instituciones hayan prescrito alertas de tres o seis meses. Si el modelo no supera a sus referentes, la alternativa operativa defendible es conservar el pronóstico sencillo y sus intervalos como señal de seguimiento.
 
 ## Decisión y anticipación de la alerta
 
@@ -72,9 +81,9 @@ La Circular Externa 026 de 2022 ilustra por qué importa anticipar el deterioro:
 
 ## Objetivo general y regla de respuesta
 
-Evaluar, mediante validación de origen móvil con ventana creciente y 25 orígenes, si el SARIMA con la tasa rezagada mejora el pronóstico del índice de mora a tres y seis meses frente al ingenuo simple y al suavizamiento exponencial ETS seleccionado por AICc. **Se concluirá que mejora en un horizonte** si obtiene menor error absoluto medio escalado (MASE) que ambos referentes, la prueba unilateral de Diebold–Mariano favorece al SARIMA frente a cada uno ($p<0{,}05$) y la cobertura empírica de sus intervalos del 80 % y 95 % se aparta como máximo cinco puntos porcentuales del nivel nominal respectivo. El objetivo se cumple al documentar una conclusión para cada horizonte, aun si no se demuestra mejora.
+Evaluar, mediante validación de origen móvil con ventana creciente y 25 orígenes, si el SARIMA con la tasa rezagada mejora el pronóstico del índice de mora a tres y seis meses frente al ingenuo simple y al suavizamiento exponencial ETS seleccionado por AICc. **Se concluirá que mejora en un horizonte** si obtiene menor error absoluto medio escalado (MASE) que ambos referentes, la prueba unilateral de Diebold–Mariano sobre pérdida absoluta escalada favorece al SARIMA frente a cada uno ($p<0{,}05$) y la cobertura empírica de sus intervalos del 80 % y 95 % se aparta como máximo cinco puntos porcentuales del nivel nominal respectivo. El objetivo se cumple al documentar una conclusión para cada horizonte, aun si no se demuestra mejora.
 
-Los 25 orígenes van de enero de 2024 a enero de 2026. En cada origen, todos los modelos usan la misma información y el mismo escalador: el promedio de los cambios mensuales absolutos del índice en la ventana de entrenamiento. La prueba contrasta las diferencias de pérdida absoluta escalada y ajusta la varianza por la dependencia entre errores de pronósticos superpuestos. El RMSE se informa como medida complementaria. Con 25 valores observados por horizonte, la tolerancia propuesta exige **19 a 21 aciertos** para los intervalos del 80 % y **23 a 25** para los del 95 %. Se informarán los conteos y los valores $p$ además de la decisión.
+Los 25 orígenes van de enero de 2024 a enero de 2026. En cada origen, todos los modelos usan la misma información y el mismo escalador: el promedio de los cambios mensuales absolutos del índice en la ventana de entrenamiento. La prueba contrasta las diferencias de pérdida absoluta escalada y requiere estimar su varianza de largo plazo considerando la dependencia entre errores de pronósticos superpuestos. Con 25 orígenes, su potencia puede ser limitada, por lo que no rechazar la igualdad de precisión no demuestra equivalencia. El RMSE se informa como medida complementaria. Con 25 valores observados por horizonte, la tolerancia propuesta exige **19 a 21 aciertos** para los intervalos del 80 % y **23 a 25** para los del 95 %. Se informarán los conteos y los valores $p$ además de la decisión.
 
 ## Objetivos específicos
 
@@ -84,9 +93,21 @@ Los 25 orígenes van de enero de 2024 a enero de 2026. En cada origen, todos los
 4. Comparar el modelo con los dos referentes a tres y seis meses mediante la regla del objetivo general.
 5. Implementar un informe Quarto parametrizado por fecha de corte y horizonte, y comprobar que reproduce los resultados en dos fechas de corte.
 
-## Marco teórico y elección de referentes
+## Trazabilidad de los objetivos
 
-El ingenuo simple repite el último valor observado. El estacional repite el valor del mismo mes del año anterior. El suavizamiento exponencial se especifica como **modelo de la familia ETS seleccionado por el criterio de información de Akaike corregido (AICc)**. En cada entrenamiento se elegirá entre las especificaciones admisibles y se registrarán los componentes de error, tendencia y estacionalidad del modelo elegido [@hyndman2021].
+Los siguientes productos se desarrollarán en los hitos metodológicos posteriores. Su inclusión aquí especifica cómo se verificará cada objetivo; **no se presentan como resultados ya obtenidos**.
+
+| Objetivo | Producto verificable |
+|:--|:--|
+| 1. Validación del índice | Figura comparativa con el indicador oficial y tabla de diferencias mensuales para el período común. |
+| 2. Caracterización | Descomposición STL, lectura de quiebres y comparación del efecto de diciembre con y sin castigos. |
+| 3. Especificación | Pruebas de integración, ACF/PACF, selección del rezago mediante análisis sobre entrenamiento, tabla de candidatos y diagnóstico de residuos. |
+| 4. Comparación | MASE y RMSE por horizonte, cobertura al 80 % y 95 %, prueba de Diebold--Mariano y sensibilidad de los resultados. |
+| 5. Implementación | Informe Quarto parametrizado y dos ejecuciones reproducibles con fechas de corte diferentes, en el repositorio. |
+
+## Fundamentos metodológicos y elección de referentes
+
+Como fuente **teórica**, y no como antecedente empírico de morosidad, @hyndman2021 fundamentan los métodos ARIMA/ETS y las reglas de evaluación. El ingenuo simple repite el último valor observado. El estacional repite el valor del mismo mes del año anterior. El suavizamiento exponencial se especifica como **modelo de la familia ETS seleccionado por el criterio de información de Akaike corregido (AICc)**. En cada entrenamiento se elegirá entre las especificaciones admisibles y se registrarán los componentes de error, tendencia y estacionalidad del modelo elegido.
 
 Para revisar el ingenuo propuesto en H2, comparamos las dos variantes en el [histórico oficial de la SFC](https://www.superfinanciera.gov.co/publicaciones/10082252), sin usar el período de evaluación final. Usamos el ICV de consumo sin castigos del total de establecimientos de crédito, de enero de 2015 a diciembre de 2023. La primera ventana comprende 60 meses; los 43 orígenes mensuales comunes van de diciembre de 2019 a junio de 2023. En cada origen se divide el error absoluto por el promedio de los cambios mensuales absolutos disponibles hasta ese momento.
 
@@ -125,11 +146,11 @@ Se establecieron cinco criterios:
 4. **Resultados:** disponibilidad de hallazgos verificables en el documento.
 5. **Utilidad:** aporte al pronóstico o a la interpretación de la dinámica de nuestra serie.
 
-Se excluyen las fuentes consultadas únicamente mediante resúmenes o registros bibliográficos, porque no permiten verificar suficientemente los datos, los métodos y los resultados.
+Se excluyen las fuentes consultadas únicamente mediante resúmenes o registros bibliográficos, porque no permiten verificar suficientemente los datos, los métodos y los resultados. En todos los nueve casos se localizó una versión completa del documento en un repositorio abierto, una página de texto íntegro o los archivos de consulta del equipo. Los enlaces se presentan en la tabla de trazabilidad documental de esta sección; los registros editoriales y los resúmenes solos no se admiten como sustento empírico.
 
 Para la comparación predictiva se distingue si el resultado procede del ajuste, de una prueba con observaciones reservadas o de una proyección sin contraste con datos realizados. Los trabajos de dinámica y estrés se conservan como antecedentes nacionales; sus respuestas a choques no se cuentan como errores de pronóstico.
 
-El corpus empírico comprende ocho estudios: cuatro artículos de revista, tres documentos del Banco de la República y un trabajo de maestría. La referencia metodológica y la circular se citan aparte. Se excluyen de la comparación directa de precisión por horizonte los resultados sin una anticipación identificable y los escenarios sin contraste con valores observados.
+El corpus empírico comprende nueve estudios: cinco artículos de revista, tres documentos del Banco de la República y un trabajo de maestría. La obra de Hyndman y Athanasopoulos (2021) se utiliza exclusivamente como **fuente teórica y metodológica**: no es una investigación empírica sobre la mora y no se cuenta entre los nueve estudios. Las normas y fuentes institucionales utilizadas para justificar la decisión también se citan aparte. Se excluyen de la comparación directa de precisión por horizonte los resultados sin una anticipación identificable y los escenarios sin contraste con valores observados.
 
 # Revisión de la literatura
 
@@ -155,9 +176,9 @@ El estudio demuestra la importancia de evaluar los modelos frente a referentes y
 
 ### Abdullah y colaboradores (2023)
 
-@abdullah2023 comparan 14 modelos utilizando 14.394 observaciones banco-trimestre de 322 bancos de 15 países emergentes, entre 2001-T1 y 2022-T3. Destinan el 75 % de las observaciones al entrenamiento y el 25 % a la prueba. Los hiperparámetros se seleccionan mediante validación cruzada dentro del entrenamiento.
+@abdullah2023 comparan 14 modelos utilizando 14.394 observaciones banco-trimestre de 322 bancos de 15 países emergentes, entre 2001-T1 y 2022-T3. Destinan el 75 % de las observaciones al entrenamiento y el 25 % a la prueba. Los modelos se comparan mediante métricas en los conjuntos de entrenamiento y prueba.
 
-Según la tabla 4, el bosque aleatorio obtiene en prueba un RMSE de 0,016, un MAE de 0,012 y un R² de 0,776. Existe una discrepancia con el resumen y la discusión, que mencionan 76,10 %; en la tabla, ese valor corresponde al R² de entrenamiento. Para esta revisión se toman los resultados identificados explícitamente como prueba en la tabla 4.
+Según la tabla 4, el bosque aleatorio obtiene en prueba un RMSE de 0,016, un MAE de 0,012 y un $R^2$ de 0,776. Existe una discrepancia entre el resultado destacado y la columna de prueba: el resumen y la discusión mencionan 76,10 %, mientras que la tabla 4 presenta $R^2=0{,}761$ en entrenamiento y $R^2=0{,}776$ en prueba. Para esta revisión se toman los resultados identificados explícitamente como prueba en la tabla 4.
 
 El artículo aporta una comparación de métodos con observaciones reservadas, pero la metodología revisada no precisa un horizonte de anticipación en trimestres. Por ello, sus resultados no se interpretan como evidencia directa de desempeño a tres o seis meses.
 
@@ -178,6 +199,12 @@ Es uno de los antecedentes más cercanos a nuestro proyecto. La principal difere
 Los autores distinguen los efectos relacionados con la capacidad de pago de los deudores y el riesgo asumido al otorgar préstamos. Encuentran que unas condiciones económicas favorables pueden mejorar la capacidad de pago y, al mismo tiempo, acompañarse de una mayor toma de riesgo.
 
 El estudio permite comprender mejor la evolución de la mora, aunque no presenta una comparación de errores predictivos equivalente a la nuestra.
+
+### Galvis-Ciro, Oliveira de Moraes y García-Lopera (2022)
+
+@galvis2022 examinan los determinantes del riesgo crediticio en 28 bancos colombianos con información trimestral entre 2009 y 2019, mediante modelos de panel dinámico estimados por GMM. Diferencian los resultados para consumo, comercial e hipotecario. En la especificación completa para la mora de consumo, el coeficiente reportado para la tasa de interés rezagada es positivo (0,0878), pero su estimación **no constituye una prueba de precisión predictiva fuera de muestra**.
+
+Este antecedente respalda la pertinencia sustantiva de estudiar la tasa de interés como covariable en consumo, aunque no prueba que incorporarla mejore los pronósticos a tres o seis meses. Además, la tasa utilizada en ese artículo no debe confundirse automáticamente con la tasa bancaria corriente elegida para este proyecto.
 
 ## Modelos macroeconómicos y escenarios de riesgo
 
@@ -208,31 +235,32 @@ Sin embargo, sus resultados corresponden a simulaciones y no a una comparación 
 # Comparación de los estudios
 
 ```{=latex}
-\clearpage
 \begin{landscape}
+\footnotesize
 ```
 
 ## Tabla comparativa
 
-Las dos tablas reúnen las ocho investigaciones revisadas. Se presentan los datos, los métodos, los horizontes, las métricas y los resultados principales.
+Las tablas reúnen las nueve investigaciones revisadas. Se presentan los datos, los métodos, los horizontes, las métricas y los resultados principales; en los estudios no predictivos, el horizonte se identifica como no aplicable y las métricas se refieren a sus propios objetivos.
 
 Para comparar desempeño, se exige que el horizonte evaluado, la métrica y el resultado puedan identificarse. Una métrica de ajuste se distingue de un error fuera de muestra.
 
 | Fuente | Datos | Método | Horizonte | Métrica | Resultado |
 |:--------------|:----------------|:----------------|:----------------|:-----------------|:------------------------|
-| @tori2024 | Albania; mensual | SARIMA y referentes | 12 meses proyectados | RMSE y MAE en ajuste | RMSE: 0,2211; sin validación equivalente a 12 pasos |
+| @tori2024 | Albania; mora mensual bancaria | SARIMA, caminata aleatoria, ETS | 12 meses proyectados | RMSE y MAE en ajuste | RMSE 0,2211; MAE 0,1799; sin validación comparable a 12 pasos |
 | @cortes2024 | 8 países; trimestral | Panel frente a AR(1) | 4, 8 y 20 trimestres | MSFE del AR(1) / MSFE del panel | Consumo en Colombia, 3SLS: 1,2; 6,3; 1,3 |
-| @hincapie2026 | Colombia; mensual | VAR, VARX, VECM | 1 paso; 12 evaluaciones | RMSE y MAE | VECM en niveles: RMSE 0,0013 |
+| @hincapie2026 | Colombia; mora de consumo, mensual 2017--2026 | VAR, VARX, VECM | 1 paso; 12 evaluaciones | RMSE y MAE | VECM en niveles: RMSE 0,0013; MAE 0,0012 |
 
 **Antecedentes complementarios.** Se presentan aparte porque no se identifica claramente la anticipación del pronóstico en la metodología revisada o porque sus resultados corresponden a dinámica y escenarios.
 
 | Fuente | Datos | Método | Horizonte | Métrica | Resultado |
 |:--------------|:----------------|:----------------|:----------------|:-----------------|:------------------------|
-| @abdullah2023 | 322 bancos de 15 países; trimestral, 2001-T1–2022-T3 | 14 modelos; entrenamiento/prueba 75/25 | Anticipación en trimestres no especificada claramente en la metodología | RMSE, MAE y R² en prueba | Bosque aleatorio, tabla 4: RMSE 0,016; MAE 0,012; R² 0,776 |
-| @gamba2021 | Colombia; consumo | Descomposición y VAR | Análisis dinámico | No comparable | Capacidad de pago y riesgo |
-| @gutierrez2008 | Colombia; mensual | VEC y estrés | Escenarios | Cambio del ICV | 6,68 % a 12,41 % |
-| @cabrera2012 | Colombia; banca | Modelos de estrés | 8 trimestres | No comparable | Resistencia ante choque |
-| @benavides2023 | Colombia; crédito | VARX | Choques simulados | No comparable | Efectos persistentes |
+| @abdullah2023 | 322 bancos de 15 países; trimestral, 2001-T1–2022-T3 | 14 modelos; entrenamiento/prueba 75/25 | Anticipación en trimestres no especificada claramente en la metodología | RMSE, MAE y $R^2$ en prueba | Bosque aleatorio, tabla 4: RMSE 0,016; MAE 0,012; $R^2$ 0,776 |
+| @gamba2021 | Colombia; consumo, cosechas 2005--2019 | Descomposición y VAR | Análisis de cosechas, sin horizonte de pronóstico | No reporta error predictivo | Capacidad de pago y riesgo |
+| @galvis2022 | Colombia; 28 bancos, trimestral 2009--2019 | Panel dinámico, GMM | Relación contemporánea y rezagada; no evaluación de pronóstico | Coeficientes, pruebas de significancia | Consumo: coeficiente de tasa rezagada 0,0878 en modelo completo |
+| @gutierrez2008 | Colombia; mora de consumo | VEC y estrés | Escenarios hipotéticos | Cambio simulado del ICV; no error predictivo | 6,68 % a 12,41 % bajo choques simultáneos |
+| @cabrera2012 | Colombia; sistema bancario | Modelos de estrés | 8 trimestres simulados | No reporta error predictivo | Evaluación de resistencia bancaria bajo choque |
+| @benavides2023 | Colombia; crédito y mora | VARX, impulso-respuesta | Choques simulados | Respuestas dinámicas; no error predictivo | Efectos persistentes y heterogeneidad por modalidad |
 
 ```{=latex}
 \end{landscape}
@@ -240,15 +268,38 @@ Para comparar desempeño, se exige que el horizonte evaluado, la métrica y el r
 
 ## Lectura de la tabla
 
-Los resultados más cercanos al problema responden preguntas distintas. Cortés y Soriano comparan errores fuera de muestra con un AR(1), pero trabajan con datos trimestrales. Hincapié Clavijo y Ramírez Cañaveral estudian la serie mensual colombiana, pero evalúan pronósticos de un paso. Tori y colaboradores proyectan doce meses; el error consignado en su estudio corresponde al ajuste. Por tanto, no sería válido ordenar estos modelos por el tamaño de sus errores. Tampoco es comparable el cambio del ICV en un escenario adverso con el error al pronosticar un valor que después se observa.
+Los resultados más cercanos al problema responden preguntas distintas. Cortés y Soriano comparan errores fuera de muestra con un AR(1), pero trabajan con datos trimestrales. Hincapié Clavijo y Ramírez Cañaveral estudian la serie mensual colombiana, pero evalúan pronósticos de un paso. Tori y colaboradores proyectan doce meses; el error consignado en su estudio corresponde al ajuste. Por tanto, no sería válido ordenar estos modelos por el tamaño de sus errores. Galvis-Ciro y colaboradores sustentan el interés de las tasas en el riesgo de consumo, pero no contrastan precisión de pronósticos a los horizontes del proyecto. Tampoco es comparable el cambio del ICV en un escenario adverso con el error al pronosticar un valor que después se observa.
 
 # Brecha de investigación
 
 Los trabajos revisados muestran que es posible anticipar parte de la variación de la mora y que la evaluación puede cambiar según el horizonte y el referente. Para el seguimiento mensual de la cartera de consumo colombiana, ninguno de los estudios revisados establece si el SARIMA con la tasa rezagada supera al ingenuo simple y al ETS seleccionado por AICc, tanto a tres como a seis meses. Un buen ajuste histórico, una proyección bajo estrés o una evaluación a un solo paso no resuelven esa decisión. El proyecto comparará errores e intervalos bajo los mismos orígenes de pronóstico y comunicará el resultado por horizonte.
 
+## Acceso a los documentos de la revisión
+
+Las siguientes direcciones conducen a textos completos localizados o a repositorios que ofrecen el archivo íntegro. Se registran para que cada resultado de la tabla pueda comprobarse en su fuente. Este control **no incluye** a @hyndman2021, que se cita como referencia teórica.
+
+| Estudio | Acceso al texto completo |
+|:--|:--|
+| @tori2024 | [PDF de la revista](https://ejist.ro/files/pdf/537.pdf) |
+| @cortes2024 | [PDF en repositorio académico](https://roderic.uv.es/rest/api/core/bitstreams/a7e55702-eae2-4a17-a93e-778b7fc89849/content) |
+| @abdullah2023 | PDF completo consultado por el equipo; [identificador editorial](https://doi.org/10.1002/for.2977) |
+| @hincapie2026 | [Repositorio EAFIT, con archivo PDF](https://repository.eafit.edu.co/entities/publication/9f5a0767-1767-45e7-9a3b-44ea39922230) |
+| @gamba2021 | [Banco de la República, documento descargable](https://www.banrep.gov.co/es/borrador-1154) |
+| @galvis2022 | PDF completo consultado por el equipo; [identificador editorial](https://doi.org/10.1080/1540496X.2022.2091434) |
+| @gutierrez2008 | [PDF del Banco de la República](https://www.banrep.gov.co/sites/default/files/publicaciones/archivos/sep_2008.pdf) |
+| @cabrera2012 | [PDF del Banco de la República](https://repositorio.banrep.gov.co/bitstream/handle/20.500.12134/2135/TEF_73.pdf) |
+| @benavides2023 | [Texto completo en PubMed Central](https://pmc.ncbi.nlm.nih.gov/articles/PMC10161606/) |
+
+Se descartó a Quimbay y Alvarez (2025) por no contar con el texto íntegro en el material revisado. Los artículos no se consideraron únicamente por sus resúmenes. La disponibilidad de un PDF no convierte automáticamente sus resultados en evidencia de capacidad predictiva: esa condición depende de que el estudio evalúe pronósticos con observaciones no utilizadas al ajustar el modelo.
+
 # Declaración de uso de inteligencia artificial
 
-Se utilizaron herramientas de inteligencia artificial como apoyo para organizar la revisión de literatura, mejorar la claridad de la redacción, estructurar la tabla comparativa y revisar la sintaxis del documento Quarto.
+| Herramienta | Tarea | Alcance y verificación |
+|:--|:--|:--|
+| ChatGPT | Consolidación y redacción | Apoyo para integrar H2 con H3, estructurar la tabla y revisar coherencia; los datos y afirmaciones bibliográficas deben cotejarse con los artículos consultados. |
+| ChatGPT | Quarto y bibliografía | Apoyo en sintaxis QMD y referencias BibTeX; el equipo debe comprobar el renderizado, los identificadores de cita y el acceso a cada fuente. |
+
+Las decisiones sobre el problema, los modelos y su interpretación son responsabilidad del equipo. La declaración deberá actualizarse si se emplean herramientas adicionales. La tabla de contribuciones individuales, requerida para la entrega final del curso, deberá completarla el equipo con las tareas efectivamente realizadas por cada integrante.
 
 # Referencias {.unnumbered}
 
